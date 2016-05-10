@@ -28,10 +28,136 @@
 
 #include "agent_metric_store_classes.h"
 
+#define POLL_INTERVAL 10000
+
+static void
+s_handle_poll ()
+{
+
+}
+
+static void
+s_handle_service (mlm_client_t *client, zmsg_t **message_p)
+{
+    assert (client);
+    assert (message_p && *message_p);
+
+    log_error ("Service deliver is not implemented.");
+
+    zmsg_destroy (message_p);
+}
+
+static void
+s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
+{
+   assert (client);
+   assert (message_p && *message_p);
+
+   log_error ("Mailbox command is not implemented.");
+
+   zmsg_destroy (message_p);
+}
+
+static void
+s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
+{
+    assert (client);
+    assert (message_p && *message_p);
+
+
+    zmsg_destroy (message_p);
+}
+
+
 void
 bios_agent_ms_server (zsock_t *pipe, void* args)
 {
+    mlm_client_t *client = mlm_client_new ();
+    if (!client) {
+        log_critical ("mlm_client_new () failed");
+        return;
+    }
+
+    zpoller_t *poller = zpoller_new (pipe, mlm_client_msgpipe (client), NULL);
+    if (!poller) {
+        log_critical ("zpoller_new () failed");
+        mlm_client_destroy (&client);
+        return;
+    }
+
+    zsock_signal (pipe, 0);
+
+    uint64_t timestamp = (uint64_t) zclock_mono ();
+    uint64_t timeout = (uint64_t) POLL_INTERVAL;
+
+    while (!zsys_interrupted) {
+        void *which = zpoller_wait (poller, timeout);
+
+        if (which == NULL) {
+            if (zpoller_terminated (poller) || zsys_interrupted) {
+                log_warning ("zpoller_terminated () or zsys_interrupted");
+                break;
+            }
+            if (zpoller_expired (poller)) {
+                s_handle_poll ();
+            }
+            timestamp = (uint64_t) zclock_mono ();
+            continue;
+        }
+
+        uint64_t now = (uint64_t) zclock_mono ();
+        if (now - timestamp >= timeout) {
+            s_handle_poll ();
+            timestamp = (uint64_t) zclock_mono ();
+        }
+
+        if (which == pipe) {
+            zmsg_t *message = zmsg_recv (pipe);
+            if (!message) {
+                log_error ("Given `which == pipe`, function `zmsg_recv (pipe)` returned NULL");
+                continue;
+            }
+            if (actor_commands (client, &message) == 1) {
+                break;
+            }
+            continue;
+        }
+
+        // paranoid non-destructive assertion of a twisted mind 
+        if (which != mlm_client_msgpipe (client)) {
+            log_critical ("which was checked for NULL, pipe and now should have been `mlm_client_msgpipe (client)` but is not.");
+            continue;
+        }
+
+        zmsg_t *message = mlm_client_recv (client);
+        if (!message) {
+            log_error ("Given `which == mlm_client_msgpipe (client)`, function `mlm_client_recv ()` returned NULL");
+            continue;
+        }
+
+        const char *command = mlm_client_command (client);
+        if (streq (command, "STREAM DELIVER")) {
+            s_handle_stream (client, &message);
+        }
+        else
+        if (streq (command, "MAILBOX DELIVER")) {
+            s_handle_mailbox (client, &message);
+        }
+        else
+        if (streq (command, "SERVICE DELIVER")) {
+            s_handle_service (client, &message);
+        }
+        else {
+            log_error ("Unrecognized mlm_client_command () = '%s'", command ? command : "(null)");
+        }
+
+        zmsg_destroy (&message);
+    } // while (!zsys_interrupted)
+
+    zpoller_destroy (&poller);
+    mlm_client_destroy (&client);
 }
+
 //  --------------------------------------------------------------------------
 //  Self test of this class
 
