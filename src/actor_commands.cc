@@ -175,7 +175,7 @@ actor_commands_test (bool verbose)
 {
     printf (" * actor_commands: ");
     //  @selftest
-    static const char* endpoint = "ipc://bios-smtp-server-test";
+    static const char* endpoint = "ipc://ms-test-actor-commands";
 
     // malamute broker
     zactor_t *malamute = zactor_new (mlm_server, (void*) "Malamute");
@@ -288,7 +288,7 @@ actor_commands_test (bool verbose)
     message = zmsg_new ();
     assert (message);
     zmsg_addstr (message, "CONNECT");   
-    zmsg_addstr (message, "ipc://bios-smtp-server-BAD");
+    zmsg_addstr (message, "ipc://bios-ws-server-BAD");
     zmsg_addstr (message, "test-agent");
     rv = actor_commands (client, &message);
     assert (rv == 0);

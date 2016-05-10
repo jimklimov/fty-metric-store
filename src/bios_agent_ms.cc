@@ -30,7 +30,7 @@
 
 #include <getopt.h>
 
-static const char *AGENT_NAME = "agent-rt";
+static const char *AGENT_NAME = "agent-ms";
 static const char *ENDPOINT = "ipc://@/malamute";
 
 #define str(x) #x
