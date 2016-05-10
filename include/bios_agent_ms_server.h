@@ -26,14 +26,9 @@
 extern "C" {
 #endif
 
-//  @interface
-//  Create a new bios_agent_ms_server
-AGENT_METRIC_STORE_EXPORT bios_agent_ms_server_t *
-    bios_agent_ms_server_new (void);
-
 //  Destroy the bios_agent_ms_server
 AGENT_METRIC_STORE_EXPORT void
-    bios_agent_ms_server_destroy (bios_agent_ms_server_t **self_p);
+    bios_agent_ms_server (zsock_t *pipe, void* args);
 
 //  Self test of this class
 AGENT_METRIC_STORE_EXPORT void

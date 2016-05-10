@@ -28,42 +28,10 @@
 
 #include "agent_metric_store_classes.h"
 
-//  Structure of our class
-
-struct _bios_agent_ms_server_t {
-    int filler;     //  Declare class properties here
-};
-
-
-//  --------------------------------------------------------------------------
-//  Create a new bios_agent_ms_server
-
-bios_agent_ms_server_t *
-bios_agent_ms_server_new (void)
-{
-    bios_agent_ms_server_t *self = (bios_agent_ms_server_t *) zmalloc (sizeof (bios_agent_ms_server_t));
-    assert (self);
-    //  Initialize class properties here
-    return self;
-}
-
-
-//  --------------------------------------------------------------------------
-//  Destroy the bios_agent_ms_server
-
 void
-bios_agent_ms_server_destroy (bios_agent_ms_server_t **self_p)
+bios_agent_ms_server (zsock_t *pipe, void* args)
 {
-    assert (self_p);
-    if (*self_p) {
-        bios_agent_ms_server_t *self = *self_p;
-        //  Free class properties here
-        //  Free object itself
-        free (self);
-        *self_p = NULL;
-    }
 }
-
 //  --------------------------------------------------------------------------
 //  Self test of this class
 
@@ -73,10 +41,6 @@ bios_agent_ms_server_test (bool verbose)
     printf (" * bios_agent_ms_server: ");
 
     //  @selftest
-    //  Simple create/destroy test
-    bios_agent_ms_server_t *self = bios_agent_ms_server_new ();
-    assert (self);
-    bios_agent_ms_server_destroy (&self);
     //  @end
     printf ("OK\n");
 }
