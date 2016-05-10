@@ -1,0 +1,11 @@
+[Unit]
+Description=bios-agent-ms service
+After=network.target
+
+[Service]
+Type=simple
+Environment="prefix=@prefix@"
+ExecStart=@prefix@/bin/bios-agent-ms @sysconfdir@/@PACKAGE@/bios-agent-ms.cfg
+
+[Install]
+WantedBy=multi-user.target
