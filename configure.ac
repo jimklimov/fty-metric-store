@@ -46,6 +46,8 @@ AGENT_METRIC_STORE_ORIG_CFLAGS="${CFLAGS:-none}"
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+AC_PROG_CXX
+AC_PROG_CXX_C_O
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 AC_PROG_SED
@@ -205,6 +207,96 @@ PKG_CHECK_MODULES([malamute], [libmlm >= 0.0.0],
 if test "x$was_malamute_check_lib_detected" = "xno"; then
     CFLAGS="${malamute_CFLAGS} ${CFLAGS}"
     LIBS="${malamute_LIBS} ${LIBS}"
+fi
+
+was_cxxtools_check_lib_detected=no
+
+PKG_CHECK_MODULES([cxxtools], [cxxtools >= 0.0.0],
+    [
+    ],
+    [
+        AC_ARG_WITH([cxxtools],
+            [
+                AS_HELP_STRING([--with-cxxtools],
+                [Specify cxxtools prefix])
+            ],
+            [search_cxxtools="yes"],
+            [])
+
+        cxxtools_synthetic_cflags=""
+        cxxtools_synthetic_libs="-lcxxtools"
+
+        if test "x$search_cxxtools" = "xyes"; then
+            if test -r "${with_cxxtools}/include/cxxtools.h"; then
+                cxxtools_synthetic_cflags="-I${with_cxxtools}/include"
+                cxxtools_synthetic_libs="-L${with_cxxtools}/lib -lcxxtools"
+            else
+                AC_MSG_ERROR([${with_cxxtools}/include/cxxtools.h not found. Please check cxxtools prefix])
+            fi
+        fi
+
+
+        AC_CHECK_LIB([cxxtools], [cxxtools::Utf8Codec::Utf8Codec],
+            [
+                CFLAGS="${cxxtools_synthetic_cflags} ${CFLAGS}"
+                LDFLAGS="${cxxtools_synthetic_libs} ${LDFLAGS}"
+                LIBS="${cxxtools_synthetic_libs} ${LIBS}"
+
+                AC_SUBST([cxxtools_CFLAGS],[${cxxtools_synthetic_cflags}])
+                AC_SUBST([cxxtools_LIBS],[${cxxtools_synthetic_libs}])
+                was_cxxtools_check_lib_detected=yes
+            ],
+            [AC_MSG_ERROR([cannot link with -lcxxtools, install cxxtools])])
+    ])
+
+if test "x$was_cxxtools_check_lib_detected" = "xno"; then
+    CFLAGS="${cxxtools_CFLAGS} ${CFLAGS}"
+    LIBS="${cxxtools_LIBS} ${LIBS}"
+fi
+
+was_tntdb_check_lib_detected=no
+
+PKG_CHECK_MODULES([tntdb], [tntdb >= 0.0.0],
+    [
+    ],
+    [
+        AC_ARG_WITH([tntdb],
+            [
+                AS_HELP_STRING([--with-tntdb],
+                [Specify tntdb prefix])
+            ],
+            [search_tntdb="yes"],
+            [])
+
+        tntdb_synthetic_cflags=""
+        tntdb_synthetic_libs="-ltntdb"
+
+        if test "x$search_tntdb" = "xyes"; then
+            if test -r "${with_tntdb}/include/tntdb.h"; then
+                tntdb_synthetic_cflags="-I${with_tntdb}/include"
+                tntdb_synthetic_libs="-L${with_tntdb}/lib -ltntdb"
+            else
+                AC_MSG_ERROR([${with_tntdb}/include/tntdb.h not found. Please check tntdb prefix])
+            fi
+        fi
+
+
+        AC_CHECK_LIB([tntdb], [tntdb::Utf8Codec::Utf8Codec],
+            [
+                CFLAGS="${tntdb_synthetic_cflags} ${CFLAGS}"
+                LDFLAGS="${tntdb_synthetic_libs} ${LDFLAGS}"
+                LIBS="${tntdb_synthetic_libs} ${LIBS}"
+
+                AC_SUBST([tntdb_CFLAGS],[${tntdb_synthetic_cflags}])
+                AC_SUBST([tntdb_LIBS],[${tntdb_synthetic_libs}])
+                was_tntdb_check_lib_detected=yes
+            ],
+            [AC_MSG_ERROR([cannot link with -ltntdb, install tntdb])])
+    ])
+
+if test "x$was_tntdb_check_lib_detected" = "xno"; then
+    CFLAGS="${tntdb_CFLAGS} ${CFLAGS}"
+    LIBS="${tntdb_LIBS} ${LIBS}"
 fi
 
 was_biosproto_check_lib_detected=no
@@ -405,7 +497,7 @@ AC_C_BIGENDIAN
 
 # These options are GNU compiler specific.
 if test "x$GCC" = "xyes"; then
-    CPPFLAGS="-pedantic -Werror -Wall -Wc++-compat ${CPPFLAGS}"
+    CPPFLAGS="-pedantic -Werror -Wall ${CPPFLAGS}"
 fi
 
 AM_CONDITIONAL(ENABLE_SHARED, test "x$enable_shared" = "xyes")

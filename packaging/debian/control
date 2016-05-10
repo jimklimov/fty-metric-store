@@ -28,6 +28,8 @@ Build-Depends: debhelper (>= 9),
     libzmq5-dev,
     libczmq-dev,
     libmlm-dev,
+    libcxxtools-dev,
+    libtntdb-dev,
     libbiosproto-dev,
     dh-autoreconf,
     systemd,
@@ -46,6 +48,8 @@ Depends:
     libzmq5-dev,
     libczmq-dev,
     libmlm-dev,
+    libcxxtools-dev,
+    libtntdb-dev,
     libbiosproto-dev,
     libagent-metric-store0 (= ${binary:Version})
 Description: development files for agent-metric-store

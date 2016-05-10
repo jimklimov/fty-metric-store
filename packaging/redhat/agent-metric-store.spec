@@ -31,9 +31,12 @@ BuildRequires:  autoconf
 BuildRequires:  libtool
 BuildRequires:  pkg-config
 BuildRequires:  systemd-devel
+BuildRequires:  gcc-c++
 BuildRequires:  zeromq-devel
 BuildRequires:  czmq-devel
 BuildRequires:  malamute-devel
+BuildRequires:  cxxtools-devel
+BuildRequires:  tntdb-devel
 BuildRequires:  biosproto-devel
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
@@ -63,6 +66,8 @@ Requires:       libagent_metric_store0 = %{version}
 Requires:       zeromq-devel
 Requires:       czmq-devel
 Requires:       malamute-devel
+Requires:       cxxtools-devel
+Requires:       tntdb-devel
 Requires:       biosproto-devel
 
 %description devel

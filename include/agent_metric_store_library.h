@@ -31,6 +31,7 @@
 
 //  External dependencies
 #include <malamute.h>
+#include <tntdb.h>
 #include <biosproto.h>
 
 //  AGENT_METRIC_STORE version macros for compile-time API detection

@@ -18,12 +18,13 @@ include_HEADERS = \
     include/agent_metric_store_library.h
 
 src_libagent_metric_store_la_SOURCES = \
-    src/logger.c \
-    src/actor_commands.c \
-    src/bios_agent_ms_server.c \
+    src/logger.cc \
+    src/actor_commands.cc \
+    src/bios_agent_ms_server.cc \
     src/platform.h
 
 src_libagent_metric_store_la_CPPFLAGS = ${AM_CPPFLAGS}
+src_libagent_metric_store_la_CXXFLAGS = ${AM_CXXFLAGS}
 
 src_libagent_metric_store_la_LDFLAGS = \
     -version-info @LTVER@ \
@@ -47,7 +48,7 @@ if ENABLE_BIOS_AGENT_MS
 bin_PROGRAMS += src/bios-agent-ms
 src_bios_agent_ms_CPPFLAGS = ${AM_CPPFLAGS}
 src_bios_agent_ms_LDADD = ${program_libs}
-src_bios_agent_ms_SOURCES = src/bios_agent_ms.c
+src_bios_agent_ms_SOURCES = src/bios_agent_ms.cc
 src_bios_agent_ms_config_DATA = src/bios-agent-ms.cfg
 src_bios_agent_ms_configdir = $(sysconfdir)/agent-metric-store
 if WITH_SYSTEMD_UNITS
@@ -61,7 +62,7 @@ check_PROGRAMS += src/agent_metric_store_selftest
 noinst_PROGRAMS += src/agent_metric_store_selftest
 src_agent_metric_store_selftest_CPPFLAGS = ${AM_CPPFLAGS}
 src_agent_metric_store_selftest_LDADD = ${program_libs}
-src_agent_metric_store_selftest_SOURCES = src/agent_metric_store_selftest.c
+src_agent_metric_store_selftest_SOURCES = src/agent_metric_store_selftest.cc
 endif #ENABLE_AGENT_METRIC_STORE_SELFTEST
 
 # define custom target for all products of /src

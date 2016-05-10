@@ -8,15 +8,21 @@ ACLOCAL_AMFLAGS = -I config
 AM_CFLAGS = \
     -Werror=format-security
 
+AM_CXXFLAGS = \
+    -Werror=format-security \
+    -std=c++11
 
 AM_CPPFLAGS = \
     ${libzmq_CFLAGS} \
     ${czmq_CFLAGS} \
     ${malamute_CFLAGS} \
+    ${cxxtools_CFLAGS} \
+    ${tntdb_CFLAGS} \
     ${biosproto_CFLAGS} \
+    -D__STDC_FORMAT_MACROS \
     -I$(srcdir)/include
 
-project_libs = ${libzmq_LIBS} ${czmq_LIBS} ${malamute_LIBS} ${biosproto_LIBS}
+project_libs = ${libzmq_LIBS} ${czmq_LIBS} ${malamute_LIBS} ${cxxtools_LIBS} ${tntdb_LIBS} ${biosproto_LIBS}
 
 SUBDIRS = doc
 DIST_SUBDIRS = doc
