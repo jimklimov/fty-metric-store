@@ -36,6 +36,7 @@
 #include "logger.h"
 #include "actor_commands.h"
 #include "converter.h"
+#include "persistance.h"
 
 //  *** To avoid double-definitions, only define if building without draft ***
 #ifndef AGENT_METRIC_STORE_BUILD_DRAFT_API
@@ -54,6 +55,11 @@ AGENT_METRIC_STORE_EXPORT void
 //  Self test of this class.
 AGENT_METRIC_STORE_EXPORT void
     converter_test (bool verbose);
+
+//  *** Draft method, defined for internal use only ***
+//  Self test of this class.
+AGENT_METRIC_STORE_EXPORT void
+    persistance_test (bool verbose);
 
 #endif // AGENT_METRIC_STORE_BUILD_DRAFT_API
 

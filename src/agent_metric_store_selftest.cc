@@ -39,6 +39,7 @@ all_tests [] = {
     { "logger", logger_test },
     { "actor_commands", actor_commands_test },
     { "converter", converter_test },
+    { "persistance", persistance_test },
     { "bios_agent_ms_server", bios_agent_ms_server_test },
     {0, 0}          //  Sentinel
 };
@@ -97,7 +98,7 @@ main (int argc, char **argv)
         else
         if (streq (argv [argn], "--number")
         ||  streq (argv [argn], "-n")) {
-            puts ("4");
+            puts ("5");
             return 0;
         }
         else
@@ -107,6 +108,7 @@ main (int argc, char **argv)
             puts ("    logger");
             puts ("    actor_commands");
             puts ("    converter");
+            puts ("    persistance");
             puts ("    bios_agent_ms_server");
             return 0;
         }

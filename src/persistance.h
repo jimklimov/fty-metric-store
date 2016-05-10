@@ -1,5 +1,5 @@
 /*  =========================================================================
-    converter - Some helper forntions to convert between types
+    persistance - Some helper functions for persistance layer
 
     Copyright (C) 2014 - 2015 Eaton                                        
                                                                            
@@ -19,30 +19,46 @@
     =========================================================================
 */
 
-#ifndef CONVERTER_H_INCLUDED
-#define CONVERTER_H_INCLUDED
+#ifndef PERSISTANCE_H_INCLUDED
+#define PERSISTANCE_H_INCLUDED
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+// ----- table:  t_bios_measurement -------------------
+// ----- column: value --------------------------------
+typedef  int32_t m_msrmnt_value_t;
 
-/**
- *  \brief Take string encoded double value and if possible 
- *          return representation: integer x 10^scale
- */
-AGENT_METRIC_STORE_EXPORT 
-bool
-    stobiosf (const std::string& string, int32_t& integer, int8_t& scale);
+// ----- table:  t_bios_measurement -------------------
+// ----- column: scale --------------------------------
+typedef  int16_t  m_msrmnt_scale_t;
 
-AGENT_METRIC_STORE_EXPORT 
-int64_t
-    string_to_int64 (const char *value);
+// ----- table:  t_bios_measurement_topic -------------
+// ----- column: id  ----------------------------------
+typedef uint16_t  m_msrmnt_tpc_id_t;
+
+// ----- table:  t_bios_discovered_device -------------
+// ----- column: id_discovered_device -----------------
+typedef uint16_t m_dvc_id_t;
+
+
+//  @interface
+//  Create a new persistance
+AGENT_METRIC_STORE_EXPORT
+int
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name);
 
 //  Self test of this class
-AGENT_METRIC_STORE_EXPORT
-void
-    converter_test (bool verbose);
+AGENT_METRIC_STORE_EXPORT void
+    persistance_test (bool verbose);
 
 //  @end
 

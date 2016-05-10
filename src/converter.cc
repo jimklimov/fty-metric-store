@@ -21,7 +21,7 @@
 
 /*
 @header
-    converter - Some helper forntions to convert between types
+    converter - Some helper functions to convert between types
 @discuss
 @end
 */

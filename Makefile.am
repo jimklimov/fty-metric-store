@@ -37,6 +37,7 @@ EXTRA_DIST = \
     src/logger.h \
     src/actor_commands.h \
     src/converter.h \
+    src/persistance.h \
     src/agent_metric_store_classes.h
 
 include $(srcdir)/src/Makemodule.am
