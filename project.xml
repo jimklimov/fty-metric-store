@@ -29,7 +29,7 @@
         Actor listening on metrics with request reply protocol for graphs
     </class>
 
-    <main name = "bios-agent-ms" service = "1" no_config = "1">
+    <main name = "bios-agent-ms" service = "1">
         Persistance layer for metrics.
     </main>
 
