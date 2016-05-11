@@ -207,7 +207,6 @@ void
 persistance_test (bool verbose)
 {
     printf (" * persistance: ");
-
     //  @selftest
     //  @end
     printf ("OK\n");
