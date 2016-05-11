@@ -164,50 +164,111 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         return msg_out;
     }
     zstr_free(&cmd);
-
-    char *element_name = zmsg_popstr (msg);
+    // All declarations are before first "goto"
+    // to make compiler happy
+    char *asset_name = zmsg_popstr (msg);
     char *quantity = zmsg_popstr (msg);
     char *step = zmsg_popstr (msg);
     char *aggr_type = zmsg_popstr (msg);
-    char *start_time_str = zmsg_popstr (msg);
-    char *end_time_str = zmsg_popstr (msg);
-    if ( !element_name || streq (element_name, "") ) {
-        // TODO fill it
+    char *start_date_str = zmsg_popstr (msg);
+    char *end_date_str = zmsg_popstr (msg);
+
+    int64_t start_date = 0;
+    int64_t end_date = 0;
+    std::string topic;
+    std::function <void(const tntdb::Row &)> add_measurement;
+    int rv;
+
+    if ( !asset_name || streq (asset_name, "") ) {
+        // TODO fill msg_out
         goto exit;
     }
 
     if ( !quantity || streq (quantity, "") ) {
-        // TODO fill it
+        // TODO fill msg_out
         goto exit;
     }
 
     if ( !step || is_average_step_supported (step) ) {
-        // TODO fill it
+        // TODO fill msg_out
         goto exit;
     }
 
     if ( !aggr_type || is_average_type_supported (aggr_type) ) {
-        // TODO fill it
+        // TODO fill msg_out
         goto exit;
     }
 
-    if ( !start_time_str ) {
-        // TODO fill it
+    if ( !start_date_str ) {
+        // TODO fill msg_out
         goto exit;
     }
 
-    if ( !end_time_str ) {
-        // TODO fill it
+    if ( !end_date_str ) {
+        // TODO fill msg_out
         goto exit;
+    }
+
+    start_date = string_to_int64 (start_date_str);
+    if (errno != 0) {
+        errno = 0;
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    end_date = string_to_int64 (end_date_str);
+    if (errno != 0) {
+        errno = 0;
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    if ( start_date > end_date ) {
+        // TODO fill msg_out
+        goto exit;
+    }
+    
+    topic += quantity;
+    topic += "_";
+    topic += aggr_type;
+    topic += "_";
+    topic += step;
+    topic += "@";
+    topic += asset_name;
+
+
+    zmsg_addstr (msg_out, "OK");
+    add_measurement = [&msg_out](const tntdb::Row& r)
+        {
+            m_msrmnt_value_t value = 0;
+            r["value"].get(value);
+
+            m_msrmnt_scale_t scale = 0;
+            r["scale"].get(scale);
+            double real_value = value * std::pow (10, scale);
+
+            int64_t timestamp = 0;
+            r["timestamp"].get(timestamp);
+
+            zmsg_addstr (msg_out, std::to_string(timestamp).c_str());
+            zmsg_addstr (msg_out, std::to_string(real_value).c_str());
+        };
+
+    rv = select_measurements (url, topic, start_date, end_date, add_measurement);
+    if ( !rv ) {
+        // as we have prepared it for SUCCESS, but we failed in the end
+        zmsg_destroy (&msg_out);
+        msg_out = zmsg_new ();
+        // TODO fill msg_out
     }
 
 exit:
-    zstr_free (&end_time_str);
-    zstr_free (&start_time_str);
+    zstr_free (&end_date_str);
+    zstr_free (&start_date_str);
     zstr_free (&aggr_type);
     zstr_free (&step);
     zstr_free (&quantity);
-    zstr_free (&element_name);
+    zstr_free (&asset_name);
     zmsg_destroy (message_p);
     return msg_out;
 }
