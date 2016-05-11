@@ -166,47 +166,42 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     zstr_free(&cmd);
 
     char *element_name = zmsg_popstr (msg);
-    if ( !element_name || streq (element_name, "") ) {
-        zmsg_destroy (message_p);
-        // TODO fill it
-        return msg_out;
-    }
-
     char *quantity = zmsg_popstr (msg);
-    if ( !quantity || streq (quantity, "") ) {
-        zmsg_destroy (message_p);
-        // TODO fill it
-        return msg_out;
-    }
-
     char *step = zmsg_popstr (msg);
-    if ( !step || is_average_step_supported (step) ) {
-        zmsg_destroy (message_p);
-        // TODO fill it
-        return msg_out;
-    }
-
     char *aggr_type = zmsg_popstr (msg);
-    if ( !aggr_type || is_average_type_supported (aggr_type) ) {
-        zmsg_destroy (message_p);
-        // TODO fill it
-        return msg_out;
-    }
-
     char *start_time_str = zmsg_popstr (msg);
-    if ( !start_time_str ) {
-        zmsg_destroy (message_p);
-        // TODO fill it
-        return msg_out;
-    }
-
     char *end_time_str = zmsg_popstr (msg);
-    if ( !end_time_str ) {
-        zmsg_destroy (message_p);
+    if ( !element_name || streq (element_name, "") ) {
         // TODO fill it
-        return msg_out;
+        goto exit;
     }
 
+    if ( !quantity || streq (quantity, "") ) {
+        // TODO fill it
+        goto exit;
+    }
+
+    if ( !step || is_average_step_supported (step) ) {
+        // TODO fill it
+        goto exit;
+    }
+
+    if ( !aggr_type || is_average_type_supported (aggr_type) ) {
+        // TODO fill it
+        goto exit;
+    }
+
+    if ( !start_time_str ) {
+        // TODO fill it
+        goto exit;
+    }
+
+    if ( !end_time_str ) {
+        // TODO fill it
+        goto exit;
+    }
+
+exit:
     zstr_free (&end_time_str);
     zstr_free (&start_time_str);
     zstr_free (&aggr_type);
