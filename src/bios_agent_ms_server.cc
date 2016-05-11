@@ -21,7 +21,8 @@
 
 /*
 @header
-    bios_agent_ms_server - Actor listening on metrics with request reply protocol for graphs
+    bios_agent_ms_server - Actor listening on metrics with request
+                reply protocol for graphs
 @discuss
 @end
 */
@@ -29,6 +30,20 @@
 #include "agent_metric_store_classes.h"
 
 #define POLL_INTERVAL 10000
+
+/**
+ *  \brief A connection string to the database
+ *
+ *  TODO: if DB_USER or DB_PASSWD would be changed the daemon
+ *          should be restarted in order to apply changes
+ */
+static std::string url =
+    std::string("mysql:db=box_utf8;user=") +
+    ((getenv("DB_USER")   == NULL) ? "root" : getenv("DB_USER")) +
+    ((getenv("DB_PASSWD") == NULL) ? ""     :
+    std::string(";password=") + getenv("DB_PASSWD"));
+
+
 
 static void
 s_handle_poll ()
@@ -64,10 +79,58 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
     assert (client);
     assert (message_p && *message_p);
 
+    bios_proto_t *m = bios_proto_decode (message_p);
+    if ( !m ) {
+        log_error("Can't decode the biosproto message, ignore it");
+        return;
+    }
+    // TODO check if it is metric
+    // TODO check if it is computed
+    std::string db_topic = std::string (bios_proto_type (m)) + "@" + std::string(bios_proto_element_src (m));
 
+    m_msrmnt_value_t value = 0;
+    m_msrmnt_scale_t scale = 0;
+    if (!strstr (bios_proto_value (m), ".")) {
+        value = string_to_int64 (bios_proto_value (m));
+        if (errno != 0) {
+            errno = 0;
+            log_error ("value of the metric is not integer");
+            bios_proto_destroy (&m);
+            zmsg_destroy (message_p);
+            return;
+        }
+    }
+    else {
+        int8_t lscale = 0;
+        int32_t integer = 0;
+        if (!stobiosf (bios_proto_value (m), integer, lscale)) {
+            log_error ("value of the metric is not double");
+            bios_proto_destroy (&m);
+            zmsg_destroy (message_p);
+            return;
+        }
+        value = integer;
+        scale = lscale;
+    }
+
+    // time is a time when message was received
+    uint64_t _time = bios_proto_aux_number(m, "time", ::time(NULL));
+    tntdb::Connection conn;
+    try {
+        conn = tntdb::connectCached(url);
+        conn.ping();
+    } catch (const std::exception &e) {
+        log_error("Can't connect to the database");
+        zmsg_destroy (message_p);
+        return;
+    }
+
+    insert_into_measurement(
+            conn, db_topic.c_str(), value, scale, _time,
+            bios_proto_unit (m), bios_proto_element_src (m));
+    bios_proto_destroy (&m);
     zmsg_destroy (message_p);
 }
-
 
 void
 bios_agent_ms_server (zsock_t *pipe, void* args)
@@ -123,7 +186,7 @@ bios_agent_ms_server (zsock_t *pipe, void* args)
             continue;
         }
 
-        // paranoid non-destructive assertion of a twisted mind 
+        // paranoid non-destructive assertion of a twisted mind
         if (which != mlm_client_msgpipe (client)) {
             log_critical ("which was checked for NULL, pipe and now should have been `mlm_client_msgpipe (client)` but is not.");
             continue;
@@ -165,7 +228,6 @@ void
 bios_agent_ms_server_test (bool verbose)
 {
     printf (" * bios_agent_ms_server: ");
-
     //  @selftest
     //  @end
     printf ("OK\n");

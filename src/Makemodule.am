@@ -20,6 +20,8 @@ include_HEADERS = \
 src_libagent_metric_store_la_SOURCES = \
     src/logger.cc \
     src/actor_commands.cc \
+    src/converter.cc \
+    src/persistance.cc \
     src/bios_agent_ms_server.cc \
     src/platform.h
 

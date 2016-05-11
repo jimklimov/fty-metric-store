@@ -150,7 +150,6 @@ logger_test (bool verbose)
     printf (" * logger: ");
 
     //  @selftest
-
     //  @end
     printf ("Empty test - OK\n");
 }

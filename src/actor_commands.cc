@@ -88,6 +88,7 @@ actor_commands (
                     "Expected multipart string format: PRODUCER/stream. "
                     "Received PRODUCER/nullptr");
             zstr_free (&stream);
+            zstr_free (&cmd);
             zmsg_destroy (message_p);
             return 0;
         }
@@ -135,11 +136,12 @@ actor_commands (
                     "Expected multipart string format: CONFIGURE/config_file. "
                     "Received CONFIGURE/nullptr");
             zstr_free (&config_file);
+            zstr_free (&cmd);
             zmsg_destroy (message_p);
             return 0;
         }
         // TODO: implement config file
-        zstr_free (&config_file); 
+        zstr_free (&config_file);
     }
     else {
         log_warning ("Command '%s' is unknown or not implemented", cmd);

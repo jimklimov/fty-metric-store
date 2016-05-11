@@ -26,6 +26,8 @@
 
     <class name = "logger"          private = "1">logging api</class>
     <class name = "actor commands"  private = "1">actor commands</class>
+    <class name = "converter"  private = "1">Some helper functions to convert between types</class>
+    <class name = "persistance"  private = "1">Some helper functions for persistance layer</class>
 
     <class name = "bios-agent-ms-server" state = "stable">
         Actor listening on metrics with request reply protocol for graphs
