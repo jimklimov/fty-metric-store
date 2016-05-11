@@ -28,7 +28,7 @@
 REQ-REP:
     request:
         subject: "aggregated data"
-        body: a multipart message "GET"/A/B/C/D/E/F
+        body: a multipart string message "GET"/A/B/C/D/E/F
    
             where:
                 A - element name
@@ -39,7 +39,7 @@ REQ-REP:
                 F - end timestamp
 
             example:
-                "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
+                "GET/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
 
     reply:
         subject: "aggregated data"
@@ -52,10 +52,10 @@ REQ-REP:
                 V_i - value (value)
 
             example:
-                "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
+                "OK"/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
 
 
-        body on error: a multipart message "ERROR"/R
+        body on error: a multipart string message "ERROR"/R
 
             where:
                 R - string describing the reason of the error
@@ -65,6 +65,9 @@ REQ-REP:
                     "BAD_STEP" when requested step is not supported
                     "BAD_TYPE" when type is not supported
                     "BAD_TIMERANGE" when in REQ fields  E and F do not form correct time interval
+
+            example:
+                "ERROR"/"BAD_MESSAGE"
 
 @end
 */
@@ -87,21 +90,28 @@ static std::string url =
     std::string(";password=") + getenv("DB_PASSWD"));
 
 
-
-static void
+// destroys the message
+static zmsg_t*
 s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
-    
-    if ( zmsg_size(*message_p) < 6 ) {
-        log_error ("Message has unsupported format, ignore it");
+    zmsg_t *msg_out = zmsg_new(); 
+    if ( zmsg_size(*message_p) < 7 ) {
         zmsg_destroy (message_p);
-        return;
+        log_error ("Message has unsupported format, ignore it");
+        // TODO fill it
+        return msg_out;
     }
-
-    
+    zmsg_t *msg = *message_p;
+    char *cmd = zmsg_popstr (msg);
+    if ( !streq(cmd, "GET") ) {
+        zmsg_destroy (message_p);
+        // TODO fill it
+        return msg_out;
+    }
     zmsg_destroy (message_p);
+    return msg_out;
 }
 
 static void
@@ -121,19 +131,19 @@ s_handle_service (mlm_client_t *client, zmsg_t **message_p)
     zmsg_destroy (message_p);
 }
 
-static void
+static zmsg_t*
 s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
-
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
-        s_handle_aggregate (client, message_p);
+        return s_handle_aggregate (client, message_p);
     }
-    else {
-        log_error ("Unsupported subject '%s'",  mlm_client_subject (client));
-    }
+    log_error ("Unsupported subject '%s'",  mlm_client_subject (client));
     zmsg_destroy (message_p);
+    zmsg_t *msg_out = zmsg_new(); 
+    // TODO fill it
+    return msg_out;
 }
 
 static void
