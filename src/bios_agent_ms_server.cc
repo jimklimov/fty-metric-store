@@ -24,6 +24,39 @@
     bios_agent_ms_server - Actor listening on metrics with request
                 reply protocol for graphs
 @discuss
+
+REQ-REP:
+    request:
+        subject: "aggregated data"
+        body: a multipart message A/B/C/D/E/F
+   
+            where:
+                A - element name
+                B - quantity
+                C - step (15m, 24h, 7d, 30d)
+                D - type (min, max, arithmetic_mean)
+                E - start timestamp
+                F - end timestamp
+        example:
+            "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
+
+    reply
+        subject: "aggregated data"
+        body: a multipart message A/B/C/D/E/F/G/[K_i/V_i]
+
+            where:
+                A - element name
+                B - quantity
+                C - step (15m, 24h, 7d, 30d)
+                D - type (min, max, arithmetic_mean)
+                E - start timestamp
+                F - end timestamp
+                G - units
+                K_i - key (UTC unix timestamp)
+                V_i - value (value)
+
+        example:
+            "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
 @end
 */
 
