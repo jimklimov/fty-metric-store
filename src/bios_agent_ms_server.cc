@@ -35,8 +35,8 @@ REQ-REP:
                 B - quantity
                 C - step (15m, 24h, 7d, 30d)
                 D - type (min, max, arithmetic_mean)
-                E - start timestamp
-                F - end timestamp
+                E - start timestamp (UTC unix timestamp)
+                F - end timestamp (UTC unix timestamp)
 
             example:
                 "GET/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
@@ -90,6 +90,58 @@ static std::string url =
     std::string(";password=") + getenv("DB_PASSWD"));
 
 
+
+//===============================================================
+// XXX ACE: actually I think, that this knowledge doesn't belong
+// to this agent, but it is necessary for REQ-REP
+// to consider: move this somehow out of this agent
+// for example: redefine protocol: to accept topic of the metric
+#define AVG_STEPS_COUNT 7
+const char *AVG_STEPS[AVG_STEPS_COUNT] = {
+    "15m",
+    "30m",
+    "1h",
+    "8h",
+    "24h",
+    "7d",
+    "30d"
+};
+
+#define AVG_TYPES_COUNT 3
+const char *AVG_TYPES[AVG_TYPES_COUNT] = {
+    "arithmetic_mean",
+    "min",
+    "max"
+};
+
+bool is_average_step_supported (const char *step) {
+    if (!step) {
+        return false;
+    }
+    for (int i = 0; i < AVG_STEPS_COUNT; ++i) {
+        if (strcmp (step, AVG_STEPS[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_average_type_supported (const char *type) {
+    if (!type) {
+        return false;
+    }
+    for (int i = 0; i < AVG_TYPES_COUNT; ++i) {
+        if (strcmp (type, AVG_TYPES[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+//====================================================================
+
+
+
+
 // destroys the message
 static zmsg_t*
 s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
@@ -103,6 +155,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         // TODO fill it
         return msg_out;
     }
+
     zmsg_t *msg = *message_p;
     char *cmd = zmsg_popstr (msg);
     if ( !streq(cmd, "GET") ) {
@@ -110,6 +163,56 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         // TODO fill it
         return msg_out;
     }
+    zstr_free(&cmd);
+
+    char *element_name = zmsg_popstr (msg);
+    if ( !element_name || streq (element_name, "") ) {
+        zmsg_destroy (message_p);
+        // TODO fill it
+        return msg_out;
+    }
+
+    char *quantity = zmsg_popstr (msg);
+    if ( !quantity || streq (quantity, "") ) {
+        zmsg_destroy (message_p);
+        // TODO fill it
+        return msg_out;
+    }
+
+    char *step = zmsg_popstr (msg);
+    if ( !step || is_average_step_supported (step) ) {
+        zmsg_destroy (message_p);
+        // TODO fill it
+        return msg_out;
+    }
+
+    char *aggr_type = zmsg_popstr (msg);
+    if ( !aggr_type || is_average_type_supported (aggr_type) ) {
+        zmsg_destroy (message_p);
+        // TODO fill it
+        return msg_out;
+    }
+
+    char *start_time_str = zmsg_popstr (msg);
+    if ( !start_time_str ) {
+        zmsg_destroy (message_p);
+        // TODO fill it
+        return msg_out;
+    }
+
+    char *end_time_str = zmsg_popstr (msg);
+    if ( !end_time_str ) {
+        zmsg_destroy (message_p);
+        // TODO fill it
+        return msg_out;
+    }
+
+    zstr_free (&end_time_str);
+    zstr_free (&start_time_str);
+    zstr_free (&aggr_type);
+    zstr_free (&step);
+    zstr_free (&quantity);
+    zstr_free (&element_name);
     zmsg_destroy (message_p);
     return msg_out;
 }
