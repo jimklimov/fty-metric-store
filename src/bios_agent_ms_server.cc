@@ -28,7 +28,7 @@
 REQ-REP:
     request:
         subject: "aggregated data"
-        body: a multipart message A/B/C/D/E/F
+        body: a multipart message "GET"/A/B/C/D/E/F
    
             where:
                 A - element name
@@ -37,26 +37,35 @@ REQ-REP:
                 D - type (min, max, arithmetic_mean)
                 E - start timestamp
                 F - end timestamp
-        example:
-            "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
 
-    reply
+            example:
+                "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
+
+    reply:
         subject: "aggregated data"
-        body: a multipart message A/B/C/D/E/F/G/[K_i/V_i]
+        body on success: a multipart message "OK"/B/C/D/E/F/G/[K_i/V_i]
 
             where:
-                A - element name
-                B - quantity
-                C - step (15m, 24h, 7d, 30d)
-                D - type (min, max, arithmetic_mean)
-                E - start timestamp
-                F - end timestamp
+                A - F have the same meaning as in "request" and must be repeated
                 G - units
                 K_i - key (UTC unix timestamp)
                 V_i - value (value)
 
-        example:
-            "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
+            example:
+                "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
+
+
+        body on error: a multipart message "ERROR"/R
+
+            where:
+                R - string describing the reason of the error
+                    "BAD_MESSAGE" when REQ does not conform to the expected message structure
+                    "BAD_ELEMENT" when element in REQ does not exist
+                    "BAD_QUANTITY" when quantity in REQ is not measured for the specified element
+                    "BAD_STEP" when requested step is not supported
+                    "BAD_TYPE" when type is not supported
+                    "BAD_TIMERANGE" when in REQ fields  E and F do not form correct time interval
+
 @end
 */
 
@@ -64,6 +73,7 @@ REQ-REP:
 
 #define POLL_INTERVAL 10000
 
+#define AVG_GRAPH "aggregated data"
 /**
  *  \brief A connection string to the database
  *
@@ -77,6 +87,22 @@ static std::string url =
     std::string(";password=") + getenv("DB_PASSWD"));
 
 
+
+static void
+s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
+{
+    assert (client);
+    assert (message_p && *message_p);
+    
+    if ( zmsg_size(*message_p) < 6 ) {
+        log_error ("Message has unsupported format, ignore it");
+        zmsg_destroy (message_p);
+        return;
+    }
+
+    
+    zmsg_destroy (message_p);
+}
 
 static void
 s_handle_poll ()
@@ -98,12 +124,16 @@ s_handle_service (mlm_client_t *client, zmsg_t **message_p)
 static void
 s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 {
-   assert (client);
-   assert (message_p && *message_p);
+    assert (client);
+    assert (message_p && *message_p);
 
-   log_error ("Mailbox command is not implemented.");
-
-   zmsg_destroy (message_p);
+    if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
+        s_handle_aggregate (client, message_p);
+    }
+    else {
+        log_error ("Unsupported subject '%s'",  mlm_client_subject (client));
+    }
+    zmsg_destroy (message_p);
 }
 
 static void
