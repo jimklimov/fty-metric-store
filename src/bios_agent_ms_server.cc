@@ -28,18 +28,18 @@
 REQ-REP:
     request:
         subject: "aggregated data"
-        body: a multipart message "GET"/A/B/C/D/E/F
+        body: a multipart string message "GET"/A/B/C/D/E/F
    
             where:
                 A - element name
                 B - quantity
                 C - step (15m, 24h, 7d, 30d)
                 D - type (min, max, arithmetic_mean)
-                E - start timestamp
-                F - end timestamp
+                E - start timestamp (UTC unix timestamp)
+                F - end timestamp (UTC unix timestamp)
 
             example:
-                "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
+                "GET/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
 
     reply:
         subject: "aggregated data"
@@ -52,10 +52,10 @@ REQ-REP:
                 V_i - value (value)
 
             example:
-                "asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
+                "OK"/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
 
 
-        body on error: a multipart message "ERROR"/R
+        body on error: a multipart string message "ERROR"/R
 
             where:
                 R - string describing the reason of the error
@@ -65,6 +65,9 @@ REQ-REP:
                     "BAD_STEP" when requested step is not supported
                     "BAD_TYPE" when type is not supported
                     "BAD_TIMERANGE" when in REQ fields  E and F do not form correct time interval
+
+            example:
+                "ERROR"/"BAD_MESSAGE"
 
 @end
 */
@@ -88,20 +91,186 @@ static std::string url =
 
 
 
-static void
+//===============================================================
+// XXX ACE: actually I think, that this knowledge doesn't belong
+// to this agent, but it is necessary for REQ-REP
+// to consider: move this somehow out of this agent
+// for example: redefine protocol: to accept topic of the metric
+#define AVG_STEPS_COUNT 7
+const char *AVG_STEPS[AVG_STEPS_COUNT] = {
+    "15m",
+    "30m",
+    "1h",
+    "8h",
+    "24h",
+    "7d",
+    "30d"
+};
+
+#define AVG_TYPES_COUNT 3
+const char *AVG_TYPES[AVG_TYPES_COUNT] = {
+    "arithmetic_mean",
+    "min",
+    "max"
+};
+
+bool is_average_step_supported (const char *step) {
+    if (!step) {
+        return false;
+    }
+    for (int i = 0; i < AVG_STEPS_COUNT; ++i) {
+        if (strcmp (step, AVG_STEPS[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_average_type_supported (const char *type) {
+    if (!type) {
+        return false;
+    }
+    for (int i = 0; i < AVG_TYPES_COUNT; ++i) {
+        if (strcmp (type, AVG_TYPES[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+//====================================================================
+
+
+
+
+// destroys the message
+static zmsg_t*
 s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
-    
-    if ( zmsg_size(*message_p) < 6 ) {
-        log_error ("Message has unsupported format, ignore it");
+    zmsg_t *msg_out = zmsg_new(); 
+    if ( zmsg_size(*message_p) < 7 ) {
         zmsg_destroy (message_p);
-        return;
+        log_error ("Message has unsupported format, ignore it");
+        // TODO fill it
+        return msg_out;
     }
 
+    zmsg_t *msg = *message_p;
+    char *cmd = zmsg_popstr (msg);
+    if ( !streq(cmd, "GET") ) {
+        zmsg_destroy (message_p);
+        // TODO fill it
+        return msg_out;
+    }
+    zstr_free(&cmd);
+    // All declarations are before first "goto"
+    // to make compiler happy
+    char *asset_name = zmsg_popstr (msg);
+    char *quantity = zmsg_popstr (msg);
+    char *step = zmsg_popstr (msg);
+    char *aggr_type = zmsg_popstr (msg);
+    char *start_date_str = zmsg_popstr (msg);
+    char *end_date_str = zmsg_popstr (msg);
+
+    int64_t start_date = 0;
+    int64_t end_date = 0;
+    std::string topic;
+    std::function <void(const tntdb::Row &)> add_measurement;
+    int rv;
+
+    if ( !asset_name || streq (asset_name, "") ) {
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    if ( !quantity || streq (quantity, "") ) {
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    if ( !step || is_average_step_supported (step) ) {
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    if ( !aggr_type || is_average_type_supported (aggr_type) ) {
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    if ( !start_date_str ) {
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    if ( !end_date_str ) {
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    start_date = string_to_int64 (start_date_str);
+    if (errno != 0) {
+        errno = 0;
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    end_date = string_to_int64 (end_date_str);
+    if (errno != 0) {
+        errno = 0;
+        // TODO fill msg_out
+        goto exit;
+    }
+
+    if ( start_date > end_date ) {
+        // TODO fill msg_out
+        goto exit;
+    }
     
+    topic += quantity;
+    topic += "_";
+    topic += aggr_type;
+    topic += "_";
+    topic += step;
+    topic += "@";
+    topic += asset_name;
+
+
+    zmsg_addstr (msg_out, "OK");
+    add_measurement = [&msg_out](const tntdb::Row& r)
+        {
+            m_msrmnt_value_t value = 0;
+            r["value"].get(value);
+
+            m_msrmnt_scale_t scale = 0;
+            r["scale"].get(scale);
+            double real_value = value * std::pow (10, scale);
+
+            int64_t timestamp = 0;
+            r["timestamp"].get(timestamp);
+
+            zmsg_addstr (msg_out, std::to_string(timestamp).c_str());
+            zmsg_addstr (msg_out, std::to_string(real_value).c_str());
+        };
+
+    rv = select_measurements (url, topic, start_date, end_date, add_measurement);
+    if ( !rv ) {
+        // as we have prepared it for SUCCESS, but we failed in the end
+        zmsg_destroy (&msg_out);
+        msg_out = zmsg_new ();
+        // TODO fill msg_out
+    }
+
+exit:
+    zstr_free (&end_date_str);
+    zstr_free (&start_date_str);
+    zstr_free (&aggr_type);
+    zstr_free (&step);
+    zstr_free (&quantity);
+    zstr_free (&asset_name);
     zmsg_destroy (message_p);
+    return msg_out;
 }
 
 static void
@@ -121,19 +290,19 @@ s_handle_service (mlm_client_t *client, zmsg_t **message_p)
     zmsg_destroy (message_p);
 }
 
-static void
+static zmsg_t*
 s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
-
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
-        s_handle_aggregate (client, message_p);
+        return s_handle_aggregate (client, message_p);
     }
-    else {
-        log_error ("Unsupported subject '%s'",  mlm_client_subject (client));
-    }
+    log_error ("Unsupported subject '%s'",  mlm_client_subject (client));
     zmsg_destroy (message_p);
+    zmsg_t *msg_out = zmsg_new(); 
+    // TODO fill it
+    return msg_out;
 }
 
 static void

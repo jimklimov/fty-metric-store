@@ -28,6 +28,49 @@
 
 #include "agent_metric_store_classes.h"
 
+int
+select_measurements (
+        const std::string &connurl,
+        const std::string &topic, // the whole topic XXX@YYY
+        int64_t start_timestamp,
+        int64_t end_timestamp,
+        std::function<void(
+                        const tntdb::Row&)>& cb)
+{
+    try {
+        tntdb::Connection conn = tntdb::connectCached(connurl);
+
+        tntdb::Statement st = conn.prepareCached (
+            " SELECT "
+            "   topic, value, scale, timestamp "
+            " FROM v_bios_measurement "
+            " WHERE "
+            "   topic = :topic AND "
+            "   timestamp >= :time_st AND "
+            "   timestamp <= :time_end"
+        );
+        // ACE: I know, that topic_id would have better performance, but
+        // for first iteration lets stay with this approach
+        tntdb::Result result = st.set ("topic", topic)
+                                 .set ("time_st", start_timestamp)
+                                 .set ("time_end", end_timestamp)
+                                 .select ();
+
+        for (const auto &row: result) {
+            cb(row);
+        }
+        return 0;
+    }
+    catch (const std::exception &e) {
+        log_error("Exception caught: %s", e.what());
+        return -1;
+    }
+    catch (...) {
+        log_error("Unknown exception caught!");
+        return -1;
+    }
+}
+
 m_dvc_id_t
     insert_as_not_classified_device(
         tntdb::Connection &conn,

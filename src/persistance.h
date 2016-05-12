@@ -19,12 +19,14 @@
     =========================================================================
 */
 
+#include <functional>
 #ifndef PERSISTANCE_H_INCLUDED
 #define PERSISTANCE_H_INCLUDED
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 // ----- table:  t_bios_measurement -------------------
 // ----- column: value --------------------------------
@@ -43,8 +45,6 @@ typedef uint16_t  m_msrmnt_tpc_id_t;
 typedef uint16_t m_dvc_id_t;
 
 
-//  @interface
-//  Create a new persistance
 AGENT_METRIC_STORE_EXPORT
 int
     insert_into_measurement(
@@ -55,6 +55,16 @@ int
         int64_t            time,
         const char        *units,
         const char        *device_name);
+
+AGENT_METRIC_STORE_EXPORT
+int
+    select_measurements (
+        const std::string &connurl,
+        const std::string &topic, // the whole topic XXX@YYY
+        int64_t start_timestamp,
+        int64_t end_timestamp,
+        std::function<void(
+                        const tntdb::Row&)>& cb);
 
 //  Self test of this class
 AGENT_METRIC_STORE_EXPORT void
