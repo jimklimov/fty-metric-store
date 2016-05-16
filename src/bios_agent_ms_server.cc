@@ -230,7 +230,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         };
   
     rv = select_topic (url, topic, select_units);
-    if ( !rv ) {
+    if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
         zmsg_destroy (&msg_out);
         msg_out = zmsg_new ();
@@ -262,7 +262,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         };
 
     rv = select_measurements (url, topic, start_date, end_date, add_measurement);
-    if ( !rv ) {
+    if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
         zsys_error ("unexpected error during measurement selecting");
         zmsg_destroy (&msg_out);
