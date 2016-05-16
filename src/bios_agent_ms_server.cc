@@ -89,59 +89,6 @@ static std::string url =
     ((getenv("DB_PASSWD") == NULL) ? ""     :
     std::string(";password=") + getenv("DB_PASSWD"));
 
-
-
-//===============================================================
-// XXX ACE: actually I think, that this knowledge doesn't belong
-// to this agent, but it is necessary for REQ-REP
-// to consider: move this somehow out of this agent
-// for example: redefine protocol: to accept topic of the metric
-#define AVG_STEPS_COUNT 7
-const char *AVG_STEPS[AVG_STEPS_COUNT] = {
-    "15m",
-    "30m",
-    "1h",
-    "8h",
-    "24h",
-    "7d",
-    "30d"
-};
-
-#define AVG_TYPES_COUNT 3
-const char *AVG_TYPES[AVG_TYPES_COUNT] = {
-    "arithmetic_mean",
-    "min",
-    "max"
-};
-
-bool is_average_step_supported (const char *step) {
-    if (!step) {
-        return false;
-    }
-    for (int i = 0; i < AVG_STEPS_COUNT; ++i) {
-        if (strcmp (step, AVG_STEPS[i]) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool is_average_type_supported (const char *type) {
-    if (!type) {
-        return false;
-    }
-    for (int i = 0; i < AVG_TYPES_COUNT; ++i) {
-        if (strcmp (type, AVG_TYPES[i]) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-//====================================================================
-
-
-
-
 // destroys the message
 static zmsg_t*
 s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
@@ -189,12 +136,12 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         goto exit;
     }
 
-    if ( !step || is_average_step_supported (step) ) {
+    if ( !step ) {
         // TODO fill msg_out
         goto exit;
     }
 
-    if ( !aggr_type || is_average_type_supported (aggr_type) ) {
+    if ( !aggr_type ){
         // TODO fill msg_out
         goto exit;
     }
