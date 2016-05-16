@@ -28,6 +28,47 @@
 
 #include "agent_metric_store_classes.h"
 
+
+int
+select_topic (
+        const std::string &connurl,
+        const std::string &topic, // the whole topic XXX@YYY
+        std::function<void(
+                        const tntdb::Row&)>& cb)
+{
+    try {
+        tntdb::Connection conn = tntdb::connectCached(connurl);
+
+        tntdb::Statement st = conn.prepareCached (
+            " SELECT "
+            "   * "
+            " FROM v_bios_measurement_topic "
+            " WHERE "
+            "   topic = :topic "
+        );
+
+        tntdb::Row row = st.set ("topic", topic)
+                                 .selectRow ();
+
+        cb(row);
+        return 0;
+    }
+    catch (const tntdb::NotFound &e) {
+        log_error("Topic not found");
+        return -2;
+    }
+    catch (const std::exception &e) {
+        log_error("Exception caught: %s", e.what());
+        return -1;
+    }
+    catch (...) {
+        log_error("Unknown exception caught!");
+        return -1;
+    }
+}
+
+
+
 int
 select_measurements (
         const std::string &connurl,
@@ -42,7 +83,7 @@ select_measurements (
 
         tntdb::Statement st = conn.prepareCached (
             " SELECT "
-            "   topic, value, scale, timestamp "
+            "   topic, value, scale, timestamp, units"
             " FROM v_bios_measurement "
             " WHERE "
             "   topic = :topic AND "

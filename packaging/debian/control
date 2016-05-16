@@ -25,7 +25,7 @@ Standards-Version: 3.9.7
 Build-Depends: debhelper (>= 9),
     pkg-config,
     dh-autoreconf,
-    libzmq5-dev,
+    libzmq4-dev,
     libczmq-dev,
     libmlm-dev,
     libcxxtools-dev,
@@ -45,7 +45,7 @@ Package: libagent-metric-store-dev
 Architecture: any
 Section: libdevel
 Depends:
-    libzmq5-dev,
+    libzmq4-dev,
     libczmq-dev,
     libmlm-dev,
     libcxxtools-dev,

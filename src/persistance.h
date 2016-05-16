@@ -66,8 +66,17 @@ int
         std::function<void(
                         const tntdb::Row&)>& cb);
 
+AGENT_METRIC_STORE_EXPORT
+int
+    select_topic (
+        const std::string &connurl,
+        const std::string &topic, // the whole topic XXX@YYY
+        std::function<void(
+                        const tntdb::Row&)>& cb);
+
 //  Self test of this class
-AGENT_METRIC_STORE_EXPORT void
+AGENT_METRIC_STORE_EXPORT
+void
     persistance_test (bool verbose);
 
 //  @end
