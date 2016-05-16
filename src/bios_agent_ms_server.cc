@@ -62,6 +62,8 @@ REQ-REP:
                     "BAD_MESSAGE" when REQ does not conform to the expected message structure
                     "BAD_TIMERANGE" when in REQ fields  E and F do not form correct time interval
                     "INTERNAL_ERROR" when error occured during fetching the rows
+                    "BAD_REQUEST" requested information is not monitored by the system
+                            (missing record in the t_bios_measurement_table)
 
             example:
                 "ERROR"/"BAD_MESSAGE"
@@ -113,6 +115,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     char *cmd = zmsg_popstr (msg);
     if ( !streq(cmd, "GET") ) {
         zmsg_destroy (message_p);
+        zsys_error ("GET is misssing");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         return msg_out;
@@ -130,39 +133,47 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     int64_t start_date = 0;
     int64_t end_date = 0;
     std::string topic;
-    std::string units;
     std::function <void(const tntdb::Row &)> add_measurement;
+    std::function <void(const tntdb::Row &)> select_units;
     int rv;
 
     if ( !asset_name || streq (asset_name, "") ) {
+        zsys_error ("asset name is empty");
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !quantity || streq (quantity, "") ) {
+        zsys_error ("quantity is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !step ) {
+        zsys_error ("step is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !aggr_type ){
+        zsys_error ("type of the aggregaation is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !start_date_str ) {
+        zsys_error ("start date is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !end_date_str ) {
+        zsys_error ("end date is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
@@ -171,6 +182,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     start_date = string_to_int64 (start_date_str);
     if (errno != 0) {
         errno = 0;
+        zsys_error ("start date cannot be converted to number");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
@@ -179,12 +191,14 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     end_date = string_to_int64 (end_date_str);
     if (errno != 0) {
         errno = 0;
+        zsys_error ("end date cannot be converted to number");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( start_date > end_date ) {
+        zsys_error ("start date > end date");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_TIMERANGE");
         goto exit;
@@ -206,15 +220,33 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     zmsg_addstr (msg_out, aggr_type);
     zmsg_addstr (msg_out, start_date_str);
     zmsg_addstr (msg_out, end_date_str);
-    
-    add_measurement = [&msg_out, &units](const tntdb::Row& r)
+ 
+    select_units = [&msg_out](const tntdb::Row& r)
         {
-            if ( units.empty() ) {
-                // this code should be called only one and only for the first fetched row
-                r["units"].get(units);
-                zmsg_addstr (msg_out, units.c_str());
-            }
+            std::string units;
+            r["units"].get(units);
 
+            zmsg_addstr (msg_out, units.c_str());
+        };
+  
+    rv = select_topic (url, topic, select_units);
+    if ( !rv ) {
+        // as we have prepared it for SUCCESS, but we failed in the end
+        zmsg_destroy (&msg_out);
+        msg_out = zmsg_new ();
+        zmsg_addstr (msg_out, "ERROR");
+        if ( rv == -2 ) { 
+            zsys_error ("topic is not found");
+            zmsg_addstr (msg_out, "BAD_REQUEST");
+        } else {
+            zsys_error ("unexpected error during topic selecting");
+            zmsg_addstr (msg_out, "INTERNAL_ERROR");
+        }
+        goto exit;
+    }
+
+    add_measurement = [&msg_out](const tntdb::Row& r)
+        {
             m_msrmnt_value_t value = 0;
             r["value"].get(value);
 
@@ -232,6 +264,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     rv = select_measurements (url, topic, start_date, end_date, add_measurement);
     if ( !rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
+        zsys_error ("unexpected error during measurement selecting");
         zmsg_destroy (&msg_out);
         msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
@@ -421,7 +454,7 @@ void
 bios_agent_ms_server_test (bool verbose)
 {
     printf (" * bios_agent_ms_server: ");
-/* the test requires some DB state, so turn off for now
+/// the test requires some DB state, so turn off for now
     //  @selftest
     static const char* endpoint = "ipc://bios-ms-server-test";
 
@@ -494,6 +527,5 @@ bios_agent_ms_server_test (bool verbose)
     mlm_client_destroy (&ui_req_rep);
     zactor_destroy (&ms_server);
     zactor_destroy (&server);
-*/
     printf ("OK\n");
 }
