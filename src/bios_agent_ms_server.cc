@@ -250,12 +250,6 @@ exit:
 }
 
 static void
-s_handle_poll ()
-{
-
-}
-
-static void
 s_handle_service (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
@@ -359,7 +353,6 @@ bios_agent_ms_server (zsock_t *pipe, void* args)
 
     zsock_signal (pipe, 0);
 
-    uint64_t timestamp = (uint64_t) zclock_mono ();
     uint64_t timeout = (uint64_t) POLL_INTERVAL;
 
     while (!zsys_interrupted) {
@@ -370,17 +363,7 @@ bios_agent_ms_server (zsock_t *pipe, void* args)
                 log_warning ("zpoller_terminated () or zsys_interrupted");
                 break;
             }
-            if (zpoller_expired (poller)) {
-                s_handle_poll ();
-            }
-            timestamp = (uint64_t) zclock_mono ();
             continue;
-        }
-
-        uint64_t now = (uint64_t) zclock_mono ();
-        if (now - timestamp >= timeout) {
-            s_handle_poll ();
-            timestamp = (uint64_t) zclock_mono ();
         }
 
         if (which == pipe) {
