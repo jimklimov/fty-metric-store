@@ -143,6 +143,11 @@ actor_commands (
         // TODO: implement config file
         zstr_free (&config_file);
     }
+    else
+    if (streq (cmd, "BIOS_METRIC_STORE_AGE"))
+    {
+        zsys_debug ("BIOS_METRIC_STORE_AGE is not yet implemented!");
+    }
     else {
         log_warning ("Command '%s' is unknown or not implemented", cmd);
     }
