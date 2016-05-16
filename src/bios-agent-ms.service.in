@@ -1,11 +1,18 @@
 [Unit]
-Description=bios-agent-ms service
-After=network.target
+Description=BIOS metric persistance
+After=malamute.service
+PartOf=bios.target
 
 [Service]
 Type=simple
 Environment="prefix=@prefix@"
-ExecStart=@prefix@/bin/bios-agent-ms @sysconfdir@/@PACKAGE@/bios-agent-ms.cfg
+EnvironmentFile=-/usr/share/bios/etc/default/bios
+EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/bios/bios-db-rw
+ExecStart=@prefix@/bin/bios-agent-ms
+Restart=allways
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
