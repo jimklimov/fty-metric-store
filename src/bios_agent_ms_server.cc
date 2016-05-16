@@ -43,7 +43,7 @@ REQ-REP:
 
     reply:
         subject: "aggregated data"
-        body on success: a multipart message "OK"/B/C/D/E/F/G/[K_i/V_i]
+        body on success: a multipart string message "OK"/A/B/C/D/E/F/G/[K_i/V_i]
 
             where:
                 A - F have the same meaning as in "request" and must be repeated
@@ -60,14 +60,19 @@ REQ-REP:
             where:
                 R - string describing the reason of the error
                     "BAD_MESSAGE" when REQ does not conform to the expected message structure
-                    "BAD_ELEMENT" when element in REQ does not exist
-                    "BAD_QUANTITY" when quantity in REQ is not measured for the specified element
-                    "BAD_STEP" when requested step is not supported
-                    "BAD_TYPE" when type is not supported
                     "BAD_TIMERANGE" when in REQ fields  E and F do not form correct time interval
+                    "INTERNAL_ERROR" when error occured during fetching the rows
 
             example:
                 "ERROR"/"BAD_MESSAGE"
+
+    request:
+        subject: UNSUPPORTED_SUBJECT
+        body: any message
+    
+    reply:
+        subject: UNSUPPORTED_SUBJECT
+        body: a multipart string message "ERROR"/"UNSUPPORTED_SUBJECT"
 
 @end
 */
@@ -99,7 +104,8 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     if ( zmsg_size(*message_p) < 7 ) {
         zmsg_destroy (message_p);
         log_error ("Message has unsupported format, ignore it");
-        // TODO fill it
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         return msg_out;
     }
 
@@ -107,7 +113,8 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     char *cmd = zmsg_popstr (msg);
     if ( !streq(cmd, "GET") ) {
         zmsg_destroy (message_p);
-        // TODO fill it
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         return msg_out;
     }
     zstr_free(&cmd);
@@ -123,70 +130,91 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     int64_t start_date = 0;
     int64_t end_date = 0;
     std::string topic;
+    std::string units;
     std::function <void(const tntdb::Row &)> add_measurement;
     int rv;
 
     if ( !asset_name || streq (asset_name, "") ) {
-        // TODO fill msg_out
         goto exit;
     }
 
     if ( !quantity || streq (quantity, "") ) {
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !step ) {
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !aggr_type ){
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !start_date_str ) {
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !end_date_str ) {
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     start_date = string_to_int64 (start_date_str);
     if (errno != 0) {
         errno = 0;
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     end_date = string_to_int64 (end_date_str);
     if (errno != 0) {
         errno = 0;
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( start_date > end_date ) {
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_TIMERANGE");
         goto exit;
     }
     
     topic += quantity;
-    topic += "_";
+    topic += "_"; // TODO: when ecpp files would be changed -> take another character
     topic += aggr_type;
-    topic += "_";
+    topic += "_"; // TODO: when ecpp files would be changed -> take another character
     topic += step;
     topic += "@";
     topic += asset_name;
 
 
     zmsg_addstr (msg_out, "OK");
-    add_measurement = [&msg_out](const tntdb::Row& r)
+    zmsg_addstr (msg_out, asset_name);
+    zmsg_addstr (msg_out, quantity);
+    zmsg_addstr (msg_out, step);
+    zmsg_addstr (msg_out, aggr_type);
+    zmsg_addstr (msg_out, start_date_str);
+    zmsg_addstr (msg_out, end_date_str);
+    
+    add_measurement = [&msg_out, &units](const tntdb::Row& r)
         {
+            if ( units.empty() ) {
+                // this code should be called only one and only for the first fetched row
+                r["units"].get(units);
+                zmsg_addstr (msg_out, units.c_str());
+            }
+
             m_msrmnt_value_t value = 0;
             r["value"].get(value);
 
@@ -206,7 +234,8 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         // as we have prepared it for SUCCESS, but we failed in the end
         zmsg_destroy (&msg_out);
         msg_out = zmsg_new ();
-        // TODO fill msg_out
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "INTERNAL_ERROR");
     }
 
 exit:
@@ -248,7 +277,8 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
     log_error ("Unsupported subject '%s'",  mlm_client_subject (client));
     zmsg_destroy (message_p);
     zmsg_t *msg_out = zmsg_new(); 
-    // TODO fill it
+    zmsg_addstr (msg_out, "ERROR");
+    zmsg_addstr (msg_out, "UNSUPPORTED_SUBJECT");
     return msg_out;
 }
 
