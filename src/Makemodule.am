@@ -72,7 +72,7 @@ endif #ENABLE_AGENT_METRIC_STORE_SELFTEST
 # Install data into /usr/local/bin
 bios_agent_msdir = @bindir@
 bios_agent_ms_SCRIPTS = \
-    bios-agent-ms-configurator
+    bios-agent-ms-cleaner
 
 
 # define custom target for all products of /src
