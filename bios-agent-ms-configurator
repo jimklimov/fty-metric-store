@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# TODO GPL
+
+echo "cleaning up the database"

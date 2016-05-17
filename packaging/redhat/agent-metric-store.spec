@@ -99,6 +99,7 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %defattr(-,root,root)
 %{_bindir}/bios-agent-ms
 %{_prefix}/lib/systemd/system/bios-agent-ms*.service
+%{_prefix}/lib/systemd/system/bios-agent-ms*.timer
 
 
 %changelog
