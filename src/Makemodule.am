@@ -55,7 +55,9 @@ src_bios_agent_ms_config_DATA = src/bios-agent-ms.cfg
 src_bios_agent_ms_configdir = $(sysconfdir)/agent-metric-store
 if WITH_SYSTEMD_UNITS
 src_bios_agent_ms_servicedir = @prefix@/lib/systemd/system
-src_bios_agent_ms_service_DATA = src/bios-agent-ms.service
+src_bios_agent_ms_service_DATA = src/bios-agent-ms.service \
+                                 src/bios-agent-ms-cleaner.service \
+                                 src/bios-agent-ms-cleaner.timer
 endif #WITH_SYSTEMD_UNITS
 endif #ENABLE_BIOS_AGENT_MS
 
@@ -66,6 +68,12 @@ src_agent_metric_store_selftest_CPPFLAGS = ${AM_CPPFLAGS}
 src_agent_metric_store_selftest_LDADD = ${program_libs}
 src_agent_metric_store_selftest_SOURCES = src/agent_metric_store_selftest.cc
 endif #ENABLE_AGENT_METRIC_STORE_SELFTEST
+
+# Install data into /usr/local/bin
+bios_agent_msdir = @bindir@
+bios_agent_ms_SCRIPTS = \
+    bios-agent-ms-cleaner
+
 
 # define custom target for all products of /src
 src:
