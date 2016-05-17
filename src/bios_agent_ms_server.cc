@@ -322,6 +322,14 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
         zsys_error("Can't decode the biosproto message, ignore it");
         return;
     }
+
+    // TODO: implement BIOS_STORE_AGE_ support
+    // ignore the stuff not coming from computation module
+    if (!bios_proto_aux_string (m, "x-cm-type", NULL)) {
+        bios_proto_destroy (&m);
+        return;
+    }
+
     // TODO check if it is metric
     // TODO check if it is computed
     std::string db_topic = std::string (bios_proto_type (m)) + "@" + std::string(bios_proto_element_src (m));

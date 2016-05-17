@@ -1,0 +1,18 @@
+[Unit]
+Description=BIOS metric persistance
+After=bios-db-init.service
+PartOf=bios.target
+
+[Service]
+Type=simple
+User=bios
+Environment="prefix=@prefix@"
+EnvironmentFile=-/usr/share/bios/etc/default/bios
+EnvironmentFile=-/usr/share/bios/etc/default/bios__bios-agent-ms.service.conf
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/default/bios__bios-agent-ms.service.conf
+EnvironmentFile=-/etc/bios/bios-db-rw
+ExecStart=@prefix@/bin/bios-agent-ms-configurator
+
+[Install]
+WantedBy=bios.target

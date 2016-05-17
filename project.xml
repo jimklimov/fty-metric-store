@@ -37,4 +37,6 @@
         Persistance layer for metrics.
     </main>
 
+    <bin name = "bios-agent-ms-cleaner">Cleanup the old metrics</bin>
+
 </project>

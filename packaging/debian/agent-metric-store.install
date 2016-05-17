@@ -1,2 +1,3 @@
 usr/bin/bios-agent-ms
 usr/lib/systemd/system/bios-agent-ms*.service
+usr/lib/systemd/system/bios-agent-ms*.timer

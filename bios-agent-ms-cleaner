@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# TODO GPL
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+export CONF_PREFIX=BIOS_METRIC_STORE_AGE_
+
+die() {
+  echo "FATAL: $@" >&2
+  exit 1
+}
+
+info() {
+  echo "INFO: $@" >&2
+}
+
+do_mysql() {
+  mysql -N -B -u "${DB_USER}" -p"${DB_PASSWD}" box_utf8 -e "$@"
+}
+
+do_remove_RT() {
+    local age=${1}
+
+    if [[ -z "${age}" || ${age} <= 0 ]]; then
+        info "${CONF_PREFIX}RT is missing or non positive, not removing real time data"
+        return 0
+    fi
+
+    info "Removing real time values, age=${age}"
+    age=$((age * 24*3600))
+    #TODO: there is no clear distinction between RT and historical entries in t_bios_measurement/t_bios_measurement_topic
+    #      reply on a fact that except things from computation modules nothing have underscore in a name
+    do_mysql "DELETE FROM t_bios_measurement WHERE topic_id IN (SELECT id FROM t_bios_measurement_topic WHERE topic NOT LIKE \"%_%\") AND timestamp < UNIX_TIMESTAMP((NOW()-${age}))"
+}
+
+do_remove_hist() {
+    local age=${1}
+    local step=${2}
+
+    if [[ -z "${age}" || ${age} <= 0 ]]; then
+        info "${CONF_PREFIX}${step} is missing or non positive, not removing historical data"
+        return 0
+    fi
+
+    info "Removing historical values, age=${age}, step=${step}"
+    age=$((age * 24*3600))
+
+    do_mysql "DELETE FROM t_bios_measurement WHERE topic_id IN (SELECT id FROM t_bios_measurement_topic WHERE topic LIKE \"%${step}%\") AND timestamp < UNIX_TIMESTAMP((NOW()-${age}))"
+}
+
+### MAIN
+if [[ -z "${DB_USER}" || -z "${DB_PASSWD}" ]]; then
+    die "DB_USER or DB_PASSWD are empty"
+fi
+
+for AGE_NAME in $(set | grep "${CONF_PREFIX}"); do
+    AGE=${!AGE_NAME}
+    case "${AGE_NAME}" in
+        *_RT)
+            do_remove_RT "${AGE}"
+            ;;
+        *)
+            STEP=${AGE_NAME/${CONF_PREFIX}/}
+            do_remove_hist "${AGE}" "${STEP}"
+            ;;
+    esac
+done
