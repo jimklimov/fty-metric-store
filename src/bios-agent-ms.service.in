@@ -1,6 +1,6 @@
 [Unit]
 Description=BIOS metric persistance
-After=malamute.service
+After=malamute.service bios-db-init.service
 PartOf=bios.target
 
 [Service]
