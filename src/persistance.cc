@@ -54,7 +54,7 @@ select_topic (
         return 0;
     }
     catch (const tntdb::NotFound &e) {
-        log_error("Topic not found");
+        log_error("Topic '%s' not found", topic.c_str());
         return -2;
     }
     catch (const std::exception &e) {
