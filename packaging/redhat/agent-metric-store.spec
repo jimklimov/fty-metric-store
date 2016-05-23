@@ -100,6 +100,7 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %{_bindir}/bios-agent-ms
 %{_prefix}/lib/systemd/system/bios-agent-ms*.service
 %{_prefix}/lib/systemd/system/bios-agent-ms*.timer
+%{_datadir}/bios/etc/default/bios__bios-agent-ms.service.conf
 
 
 %changelog

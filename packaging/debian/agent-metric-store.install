@@ -1,3 +1,4 @@
 usr/bin/bios-agent-ms
 usr/lib/systemd/system/bios-agent-ms*.service
 usr/lib/systemd/system/bios-agent-ms*.timer
+usr/share/bios/etc/default/bios__bios-agent-ms.service.conf

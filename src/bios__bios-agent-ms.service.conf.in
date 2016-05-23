@@ -1,0 +1,28 @@
+# Part of Eaton $BIOS project
+# Modify the /etc/default/bios__bios-agent-ms.service.conf
+# Those values will be rewritten during OS upgrade
+
+# How many days system should preserve "real time" data
+# 0 means do not save at all
+BIOS_METRIC_STORE_AGE_RT=0
+
+# How many days system should preserve "15 min" computed values
+BIOS_METRIC_STORE_AGE_15m=1
+
+# How many days system should preserve "30 min" computed values
+BIOS_METRIC_STORE_AGE_30m=1
+
+# How many days system should preserve "1h" computed values
+BIOS_METRIC_STORE_AGE_1h=7
+
+# How many days system should preserve "8h" computed values
+BIOS_METRIC_STORE_AGE_8h=7
+
+# How many days system should preserve "1d" computed values
+BIOS_METRIC_STORE_AGE_8h=30
+
+# How many days system should preserve "7d" computed values
+BIOS_METRIC_STORE_AGE_8h=180
+
+# How many days system should preserve "30d" computed values
+BIOS_METRIC_STORE_AGE_8h=730

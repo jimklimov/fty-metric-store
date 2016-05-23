@@ -73,6 +73,8 @@ endif #ENABLE_AGENT_METRIC_STORE_SELFTEST
 bios_agent_msdir = @bindir@
 bios_agent_ms_SCRIPTS = \
     bios-agent-ms-cleaner
+bios_agent_ms_datadir = @datadir@/bios/etc/default/
+bios_agent_ms_data_DATA = src/bios__bios-agent-ms.service.conf
 
 
 # define custom target for all products of /src
