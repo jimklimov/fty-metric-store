@@ -98,6 +98,7 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %files
 %defattr(-,root,root)
 %{_bindir}/bios-agent-ms
+%{_bindir}/bios-agent-ms-cleaner
 %{_prefix}/lib/systemd/system/bios-agent-ms*.service
 %{_prefix}/lib/systemd/system/bios-agent-ms*.timer
 %{_datadir}/bios/etc/default/bios__bios-agent-ms.service.conf
