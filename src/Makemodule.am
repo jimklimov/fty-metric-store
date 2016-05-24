@@ -56,8 +56,8 @@ src_bios_agent_ms_configdir = $(sysconfdir)/agent-metric-store
 if WITH_SYSTEMD_UNITS
 src_bios_agent_ms_servicedir = @prefix@/lib/systemd/system
 src_bios_agent_ms_service_DATA = src/bios-agent-ms.service \
-                                 src/bios-agent-ms-cleaner.service \
-                                 src/bios-agent-ms-cleaner.timer
+                                 src/biostimer-agent-ms-cleaner.service \
+                                 src/biostimer-agent-ms-cleaner.timer
 endif #WITH_SYSTEMD_UNITS
 endif #ENABLE_BIOS_AGENT_MS
 
@@ -72,7 +72,7 @@ endif #ENABLE_AGENT_METRIC_STORE_SELFTEST
 # Install data into /usr/local/bin
 bios_agent_msdir = @bindir@
 bios_agent_ms_SCRIPTS = \
-    bios-agent-ms-cleaner
+    biostimer-agent-ms-cleaner
 bios_agent_ms_datadir = @datadir@/bios/etc/default/
 bios_agent_ms_data_DATA = src/bios__bios-agent-ms.service.conf
 
