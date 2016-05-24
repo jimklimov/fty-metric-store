@@ -6,6 +6,10 @@ export PATH
 
 export CONF_PREFIX=BIOS_METRIC_STORE_AGE_
 
+# read env variables
+test -f /etc/default/bios-db-rw || die "Can't get db credentials"
+. /etc/default/bios-db-rw
+
 die() {
   echo "FATAL: $@" >&2
   exit 1
