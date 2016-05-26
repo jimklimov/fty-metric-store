@@ -29,7 +29,7 @@ REQ-REP:
     request:
         subject: "aggregated data"
         body: a multipart string message "GET"/A/B/C/D/E/F
-   
+
             where:
                 A - element name
                 B - quantity
@@ -71,7 +71,7 @@ REQ-REP:
     request:
         subject: UNSUPPORTED_SUBJECT
         body: any message
-    
+ 
     reply:
         subject: UNSUPPORTED_SUBJECT
         body: a multipart string message "ERROR"/"UNSUPPORTED_SUBJECT"
@@ -102,7 +102,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
-    zmsg_t *msg_out = zmsg_new(); 
+    zmsg_t *msg_out = zmsg_new();
     if ( zmsg_size(*message_p) < 7 ) {
         zmsg_destroy (message_p);
         zsys_error ("Message has unsupported format, ignore it");
@@ -203,7 +203,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         zmsg_addstr (msg_out, "BAD_TIMERANGE");
         goto exit;
     }
-    
+
     topic += quantity;
     topic += "_"; // TODO: when ecpp files would be changed -> take another character
     topic += aggr_type;
@@ -220,7 +220,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     zmsg_addstr (msg_out, aggr_type);
     zmsg_addstr (msg_out, start_date_str);
     zmsg_addstr (msg_out, end_date_str);
- 
+
     select_units = [&msg_out](const tntdb::Row& r)
         {
             std::string units;
@@ -228,14 +228,14 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 
             zmsg_addstr (msg_out, units.c_str());
         };
-  
+
     rv = select_topic (url, topic, select_units);
     if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
         zmsg_destroy (&msg_out);
         msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
-        if ( rv == -2 ) { 
+        if ( rv == -2 ) {
             zsys_error ("topic is not found");
             zmsg_addstr (msg_out, "BAD_REQUEST");
         } else {
@@ -312,6 +312,57 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 }
 
 static void
+s_process_metric (bios_proto_t *m)
+{
+    assert(m);
+    std::string db_topic = std::string (bios_proto_type (m)) + "@" + std::string(bios_proto_element_src (m));
+
+    m_msrmnt_value_t value = 0;
+    m_msrmnt_scale_t scale = 0;
+    if (!strstr (bios_proto_value (m), ".")) {
+        value = string_to_int64 (bios_proto_value (m));
+        if (errno != 0) {
+            errno = 0;
+            zsys_error ("value of the metric is not integer");
+            bios_proto_destroy (&m);
+            return;
+        }
+    }
+    else {
+        int8_t lscale = 0;
+        int32_t integer = 0;
+        if (!stobiosf (bios_proto_value (m), integer, lscale)) {
+            zsys_error ("value of the metric is not double");
+            bios_proto_destroy (&m);
+            return;
+        }
+        value = integer;
+        scale = lscale;
+    }
+
+    // time is a time when message was received
+    uint64_t _time = bios_proto_aux_number(m, "time", ::time(NULL));
+    tntdb::Connection conn;
+    try {
+        conn = tntdb::connectCached(url);
+        conn.ping();
+    } catch (const std::exception &e) {
+        zsys_error("Can't connect to the database");
+        return;
+    }
+
+    insert_into_measurement(
+            conn, db_topic.c_str(), value, scale, _time,
+            bios_proto_unit (m), bios_proto_element_src (m));
+}
+
+static void
+s_process_asset (bios_proto_t *m)
+{
+    assert(m);
+}
+
+static void
 s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
@@ -330,50 +381,13 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
         return;
     }
 
-    // TODO check if it is metric
-    // TODO check if it is computed
-    std::string db_topic = std::string (bios_proto_type (m)) + "@" + std::string(bios_proto_element_src (m));
-
-    m_msrmnt_value_t value = 0;
-    m_msrmnt_scale_t scale = 0;
-    if (!strstr (bios_proto_value (m), ".")) {
-        value = string_to_int64 (bios_proto_value (m));
-        if (errno != 0) {
-            errno = 0;
-            zsys_error ("value of the metric is not integer");
-            bios_proto_destroy (&m);
-            zmsg_destroy (message_p);
-            return;
-        }
+    if ( bios_proto_id(m) == BIOS_PROTO_METRIC ) {
+        s_process_metric (m);
+    } else if ( bios_proto_id(m) == BIOS_PROTO_ALERT ) {
+        s_process_asset (m);
+    } else {
+        zsys_error ("Unsupported bios_proto message with id = '%d'", bios_proto_id(m));
     }
-    else {
-        int8_t lscale = 0;
-        int32_t integer = 0;
-        if (!stobiosf (bios_proto_value (m), integer, lscale)) {
-            zsys_error ("value of the metric is not double");
-            bios_proto_destroy (&m);
-            zmsg_destroy (message_p);
-            return;
-        }
-        value = integer;
-        scale = lscale;
-    }
-
-    // time is a time when message was received
-    uint64_t _time = bios_proto_aux_number(m, "time", ::time(NULL));
-    tntdb::Connection conn;
-    try {
-        conn = tntdb::connectCached(url);
-        conn.ping();
-    } catch (const std::exception &e) {
-        zsys_error("Can't connect to the database");
-        zmsg_destroy (message_p);
-        return;
-    }
-
-    insert_into_measurement(
-            conn, db_topic.c_str(), value, scale, _time,
-            bios_proto_unit (m), bios_proto_element_src (m));
     bios_proto_destroy (&m);
     zmsg_destroy (message_p);
 }
