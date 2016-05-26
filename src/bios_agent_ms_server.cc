@@ -315,6 +315,12 @@ static void
 s_process_metric (bios_proto_t *m)
 {
     assert(m);
+    // TODO: implement BIOS_STORE_AGE_ support
+    // ignore the stuff not coming from computation module
+    if (!bios_proto_aux_string (m, "x-cm-type", NULL)) {
+        zsys_info ("ignore it, not CM");
+        return;
+    }
     std::string db_topic = std::string (bios_proto_type (m)) + "@" + std::string(bios_proto_element_src (m));
 
     m_msrmnt_value_t value = 0;
@@ -360,6 +366,21 @@ static void
 s_process_asset (bios_proto_t *m)
 {
     assert(m);
+    if ( streq (bios_proto_operation (m), "delete") ) {
+        zsys_debug ("Asset is deleted -> delete all it measurements");
+        tntdb::Connection conn;
+        try {
+            conn = tntdb::connectCached(url);
+            conn.ping();
+        } catch (const std::exception &e) {
+            zsys_error("Can't connect to the database");
+            return;
+        }
+
+        delete_measurements (conn, bios_proto_name(m));
+    } else {
+        zsys_debug ("Operation '%s' on the asset is not interesting", bios_proto_operation (m) );
+    }
 }
 
 static void
@@ -374,16 +395,9 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
         return;
     }
 
-    // TODO: implement BIOS_STORE_AGE_ support
-    // ignore the stuff not coming from computation module
-    if (!bios_proto_aux_string (m, "x-cm-type", NULL)) {
-        bios_proto_destroy (&m);
-        return;
-    }
-
     if ( bios_proto_id(m) == BIOS_PROTO_METRIC ) {
         s_process_metric (m);
-    } else if ( bios_proto_id(m) == BIOS_PROTO_ALERT ) {
+    } else if ( bios_proto_id(m) == BIOS_PROTO_ASSET ) {
         s_process_asset (m);
     } else {
         zsys_error ("Unsupported bios_proto message with id = '%d'", bios_proto_id(m));
@@ -548,6 +562,106 @@ bios_agent_ms_server_test (bool verbose)
     //  @end
     mlm_client_destroy (&metric_producer);
     mlm_client_destroy (&ui_req_rep);
+    zactor_destroy (&ms_server);
+    zactor_destroy (&server);
+*/
+
+/*//  the test requires some DB state, so turn off for now
+    //  @selftest
+    static const char* endpoint = "ipc://bios-ms-server-test";
+
+    // malamute broker
+    zactor_t *server = zactor_new (mlm_server, (void*) "Malamute");
+    assert ( server != NULL );
+    zstr_sendx (server, "BIND", endpoint, NULL);
+    zsys_info ("malamute started");
+
+    // ms server
+    zactor_t *ms_server = zactor_new (bios_agent_ms_server, NULL);
+    if (verbose)
+        zstr_send (ms_server, "VERBOSE");
+    zstr_sendx (ms_server, "CONNECT", endpoint, "agent-ms", NULL);
+    zstr_sendx (ms_server, "CONSUMER", BIOS_PROTO_STREAM_METRICS,".*", NULL);
+    zstr_sendx (ms_server, "CONSUMER", BIOS_PROTO_STREAM_ASSETS,".*", NULL);
+    zsys_info ("ms server agent started");
+
+    // metric producer
+    mlm_client_t *metric_producer = mlm_client_new ();
+    int rv = mlm_client_connect (metric_producer, endpoint, 1000, "metric_producer");
+    assert( rv != -1 );
+    rv = mlm_client_set_producer (metric_producer, BIOS_PROTO_STREAM_METRICS);
+    assert( rv != -1 );
+    zsys_info ("metric producer started");
+
+    // asset producer
+    mlm_client_t *asset_producer = mlm_client_new ();
+    rv = mlm_client_connect (asset_producer, endpoint, 1000, "asset_producer");
+    assert( rv != -1 );
+    rv = mlm_client_set_producer (asset_producer, BIOS_PROTO_STREAM_ASSETS);
+    assert( rv != -1 );
+    zsys_info ("asset producer started");
+
+
+    zsys_debug ( "##\tscenario 2:");
+    // 1. send metric (3 times)
+    // 2. send asset delete
+    //
+    zhash_t *aux = zhash_new();
+    zhash_autofree(aux);
+    uint64_t timestamp = ::time(NULL) - 200;
+    zhash_insert(aux, "time", (char *) std::to_string(timestamp).c_str());
+    zhash_insert(aux, "x-cm-type", (void*)"Hahahah");
+    zmsg_t *msg = bios_proto_encode_metric (
+            aux,
+            "somesource_min_1m",
+            "some_element",
+            "2.45",
+            "W",
+            600);
+    mlm_client_send (metric_producer, "somestrangetopic", &msg);
+    zhash_destroy (&aux);
+    zclock_sleep(1000);
+
+    aux = zhash_new();
+    zhash_autofree(aux);
+    timestamp = ::time(NULL) - 500;
+    zhash_insert(aux, "time", (char *) std::to_string(timestamp).c_str());
+    zhash_insert(aux, "x-cm-type", (void*)"Hahahah");
+    msg = bios_proto_encode_metric (
+            aux,
+            "somesource_min_1m",
+            "some_element",
+            "2.44",
+            "W",
+            600);
+    mlm_client_send (metric_producer, "somestrangetopic", &msg);
+    zhash_destroy (&aux);
+    zclock_sleep(1000);
+
+    aux = zhash_new();
+    zhash_autofree(aux);
+    timestamp = ::time(NULL) - 1500;
+    zhash_insert(aux, "x-cm-type", (void*)"Hahahah");
+    zhash_insert(aux, "time", (char *) std::to_string(timestamp).c_str());
+    msg = bios_proto_encode_metric (
+            aux,
+            "somesource_min_1m",
+            "some_element",
+            "1.44",
+            "W",
+            600);
+    mlm_client_send (metric_producer, "somestrangetopic", &msg);
+    zhash_destroy (&aux);
+    zclock_sleep(1000);
+
+    msg = bios_proto_encode_asset (NULL, "some_element", "delete", NULL);
+    assert (msg);
+    rv = mlm_client_send (asset_producer, "some_element", &msg);
+    assert ( rv == 0 );
+    zsys_info ("asset message was send");
+    zclock_sleep(2000);
+    mlm_client_destroy (&asset_producer);
+    mlm_client_destroy (&metric_producer);
     zactor_destroy (&ms_server);
     zactor_destroy (&server);
 */
