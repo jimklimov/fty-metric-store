@@ -74,6 +74,12 @@ int
         std::function<void(
                         const tntdb::Row&)>& cb);
 
+AGENT_METRIC_STORE_EXPORT
+int
+    delete_measurements(
+        tntdb::Connection &conn,
+        const char        *asset_name);
+
 //  Self test of this class
 AGENT_METRIC_STORE_EXPORT
 void
