@@ -116,7 +116,6 @@ int main (int argc, char *argv [])
         usage ();
         return EXIT_FAILURE;
     }
-
     // log_level cascade (priority ascending)
     //  1. default value
     //  2. env. variable 
@@ -141,8 +140,8 @@ int main (int argc, char *argv [])
         return EXIT_FAILURE;
     }
     zstr_sendx (ms_server, "CONNECT", ENDPOINT, AGENT_NAME, NULL);
-    zstr_sendx (ms_server, "CONSUMER", BIOS_PROTO_STREAM_METRICS, ".*");
-    zstr_sendx (ms_server, "CONSUMER", BIOS_PROTO_STREAM_ASSETS, ".*");
+    zstr_sendx (ms_server, "CONSUMER", BIOS_PROTO_STREAM_METRICS, ".*", NULL);
+    zstr_sendx (ms_server, "CONSUMER", BIOS_PROTO_STREAM_ASSETS, ".*", NULL);
 
     // setup the storage age
     for (int i = 0; i != STEPS_SIZE; i++) {
