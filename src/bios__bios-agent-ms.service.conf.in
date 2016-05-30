@@ -18,11 +18,11 @@ BIOS_METRIC_STORE_AGE_1h=7
 # How many days system should preserve "8h" computed values
 BIOS_METRIC_STORE_AGE_8h=7
 
-# How many days system should preserve "1d" computed values
-BIOS_METRIC_STORE_AGE_8h=30
+# How many days system should preserve "24h" computed values
+BIOS_METRIC_STORE_AGE_24h=30
 
 # How many days system should preserve "7d" computed values
-BIOS_METRIC_STORE_AGE_8h=180
+BIOS_METRIC_STORE_AGE_7d=180
 
 # How many days system should preserve "30d" computed values
-BIOS_METRIC_STORE_AGE_8h=730
+BIOS_METRIC_STORE_AGE_30d=730
