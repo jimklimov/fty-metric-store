@@ -318,7 +318,6 @@ s_process_metric (bios_proto_t *m)
     // TODO: implement BIOS_STORE_AGE_ support
     // ignore the stuff not coming from computation module
     if (!bios_proto_aux_string (m, "x-cm-type", NULL)) {
-        zsys_info ("ignore it, not CM");
         return;
     }
     std::string db_topic = std::string (bios_proto_type (m)) + "@" + std::string(bios_proto_element_src (m));
