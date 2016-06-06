@@ -328,8 +328,7 @@ s_process_metric (bios_proto_t *m)
         value = string_to_int64 (bios_proto_value (m));
         if (errno != 0) {
             errno = 0;
-            zsys_error ("value of the metric is not integer");
-            bios_proto_destroy (&m);
+            zsys_error ("value '%s' of the metric is not integer", bios_proto_value (m) );
             return;
         }
     }
@@ -337,8 +336,7 @@ s_process_metric (bios_proto_t *m)
         int8_t lscale = 0;
         int32_t integer = 0;
         if (!stobiosf (bios_proto_value (m), integer, lscale)) {
-            zsys_error ("value of the metric is not double");
-            bios_proto_destroy (&m);
+            zsys_error ("value '%s' of the metric is not double", bios_proto_value (m));
             return;
         }
         value = integer;
