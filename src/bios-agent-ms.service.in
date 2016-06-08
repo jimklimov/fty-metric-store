@@ -1,10 +1,12 @@
 [Unit]
 Description=BIOS metric persistance
+Requires=malamute.service bios-db-init.service
 After=malamute.service bios-db-init.service
 PartOf=bios.target
 
 [Service]
 Type=simple
+User=bios
 Environment="prefix=@prefix@"
 EnvironmentFile=-/usr/share/bios/etc/default/bios
 EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf

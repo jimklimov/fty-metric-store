@@ -1,5 +1,6 @@
 [Unit]
 Description=BIOS metric persistance cleaner
+Requires=bios-db-init.service
 After=bios-db-init.service
 PartOf=bios.target
 
