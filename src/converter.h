@@ -31,13 +31,14 @@ extern "C" {
  *  \brief Take string encoded double value and if possible 
  *          return representation: integer x 10^scale
  */
-AGENT_METRIC_STORE_EXPORT 
-bool
+AGENT_METRIC_STORE_EXPORT bool
     stobiosf (const std::string& string, int32_t& integer, int8_t& scale);
 
-AGENT_METRIC_STORE_EXPORT 
-int64_t
+AGENT_METRIC_STORE_EXPORT int64_t
     string_to_int64 (const char *value);
+
+AGENT_METRIC_STORE_EXPORT bool
+    stobiosf_wrapper (const std::string& string, int32_t& integer, int8_t& scale);
 
 //  Self test of this class
 AGENT_METRIC_STORE_EXPORT

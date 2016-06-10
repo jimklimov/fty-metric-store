@@ -335,10 +335,10 @@ s_process_metric (bios_proto_t *m)
     else {
         int8_t lscale = 0;
         int32_t integer = 0;
-        if (!stobiosf (bios_proto_value (m), integer, lscale)) {
+        if (!stobiosf_wrapper (bios_proto_value (m), integer, lscale)) {
             zsys_error ("value '%s' of the metric is not double", bios_proto_value (m));
             return;
-        }
+        }        
         value = integer;
         scale = lscale;
     }
