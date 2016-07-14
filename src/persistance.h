@@ -64,7 +64,8 @@ int
         int64_t start_timestamp,
         int64_t end_timestamp,
         std::function<void(
-                        const tntdb::Row&)>& cb);
+                        const tntdb::Row&)>& cb,
+        bool is_ordered);
 
 AGENT_METRIC_STORE_EXPORT
 int
