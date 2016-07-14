@@ -30,12 +30,14 @@
 
 
 bool 
-    stobiosf (const std::string& string, int32_t& integer, int8_t& scale)
+stobiosf (const std::string& string, int32_t& integer, int8_t& scale)
 {
     // Note: Shall performance __really__ become an issue, consider
     // http://stackoverflow.com/questions/1205506/calculating-a-round-order-of-magnitude
-    if (string.empty ())
+    if (string.empty ()) {
+        log_error ("string is empty '%s'", string.c_str ());
         return false;
+    }
 
     // See if string is encoded double
     size_t pos = 0;
@@ -43,12 +45,26 @@ bool
     try {
         temp = std::stod (string, &pos);
     }
-    catch (...) {
+    catch (const std::invalid_argument& e) {
+        log_error ("std::invalid_argument caught: %s", e.what ());
         return false;
     }
-    if (pos != string.size () || std::isnan (temp) || std::isinf (temp)) {
+    catch (const std::out_of_range& e) {
+        log_error ("std::out_of_range caught: %s", e.what ());
         return false;
     }
+    if (pos != string.size ()) {
+        log_error ("pos != string.size ()");
+        return false;
+    }
+    if (std::isnan (temp)) {
+        log_error ("std::isnan (temp) == true");
+        return false;
+    }
+    if (std::isinf (temp)) {
+        log_error ("std::isinf (temp) == true");
+        return false;
+    }   
 
     // parse out the string
     std::string integer_string, fraction_string;
@@ -61,9 +77,15 @@ bool
     try {
         integer_part = std::stoi (integer_string);
     }
-    catch (...) {
+    catch (const std::invalid_argument& e) {
+        log_error ("std::invalid_argument caught: %s", e.what ());
         return false;
     }
+    catch (const std::out_of_range& e) {
+        log_error ("std::out_of_range caught: %s", e.what ());
+        return false;
+    }
+
     if (integer_part < 0)
         minus = true;
     if (comma ==  std::string::npos) {
@@ -85,7 +107,12 @@ bool
     try {
         fraction_part = std::stoi (fraction_string);
     }
-    catch (...) {
+    catch (const std::invalid_argument& e) {
+        log_error ("std::invalid_argument caught: %s", e.what ());
+        return false;
+    }
+    catch (const std::out_of_range& e) {
+        log_error ("std::out_of_range caught: %s", e.what ());
         return false;
     }
 
@@ -99,9 +126,13 @@ bool
         sum = sum + fraction_part;
     
     if ( sum > std::numeric_limits<int32_t>::max ()) {
+        log_error ("sum > std::numeric_limits <int32_t>::max () -- '%" PRIi64"' > '%" PRIi32"'",
+                sum, std::numeric_limits<int32_t>::max ());
         return false;
     }
     if (fraction_size - 1 > std::numeric_limits<int8_t>::max ()) {
+        log_error ("fraction_size -1 > std::numeric_limits <int8_t>::max () -- '%zu' > '%" PRIi8"'",
+                fraction_size - 1, std::numeric_limits<int8_t>::max ());
         return false;
     }
     scale = -fraction_size;
@@ -129,6 +160,24 @@ int64_t
     return result;
 }
 
+bool
+stobiosf_wrapper (const std::string& string, int32_t& integer, int8_t& scale)
+{
+    if (stobiosf (string, integer, scale))
+        return true;
+
+    std::string::size_type comma = string.find (".");
+    if (comma == std::string::npos)
+        return false;
+    
+    std::string stripped = string;
+    std::string fraction = string.substr (comma + 1);
+    if (fraction.size () > 2) { 
+        stripped = stripped.substr (0, stripped.size () - (fraction.size () - 2));
+    }
+    return stobiosf (stripped, integer, scale);
+}
+
 //  --------------------------------------------------------------------------
 //  Self test of this class
 
@@ -141,6 +190,20 @@ converter_test (bool verbose)
 
     int8_t scale = 0;
     int32_t integer = 0;
+
+    assert ( stobiosf_wrapper ("3055.555556", integer, scale));
+    stobiosf_wrapper ("3055.555556", integer, scale);
+    assert ( integer == 305555 );
+    assert ( scale == -2 );
+
+    assert ( stobiosf_wrapper ("3000.000000", integer, scale));
+    assert ( integer == 3000 );
+    assert ( scale == 0 );
+
+    assert ( stobiosf_wrapper ("3057.142857", integer, scale));
+    assert ( integer == 305714 );
+    assert ( scale == -2 );
+
     assert ( stobiosf ("12.835", integer, scale));
     assert ( integer == 12835 );
     assert ( scale == -3 );
