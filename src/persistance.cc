@@ -76,20 +76,23 @@ int
         int64_t start_timestamp,
         int64_t end_timestamp,
         std::function<void(
-                        const tntdb::Row&)>& cb)
+                        const tntdb::Row&)>& cb,
+        bool is_ordered)
 {
     try {
         tntdb::Connection conn = tntdb::connectCached(connurl);
-
-        tntdb::Statement st = conn.prepareCached (
+        std::string query = 
             " SELECT "
-            "   topic, value, scale, timestamp, units"
+            "   topic, value, scale, timestamp, units "
             " FROM v_bios_measurement "
             " WHERE "
             "   topic = :topic AND "
             "   timestamp >= :time_st AND "
-            "   timestamp <= :time_end"
-        );
+            "   timestamp <= :time_end ";
+        if ( is_ordered ) {
+            query += " ORDER BY timestamp ASC";
+        }
+        tntdb::Statement st = conn.prepareCached (query);
         // ACE: I know, that topic_id would have better performance, but
         // for first iteration lets stay with this approach
         tntdb::Result result = st.set ("topic", topic)
