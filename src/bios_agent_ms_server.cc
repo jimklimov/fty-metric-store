@@ -47,7 +47,7 @@ REQ-REP:
         body on success: a multipart string message "OK"/A/B/C/D/E/F/L/G/[K_i/V_i]
 
             where:
-                A - F have the same meaning as in "request" and must be repeated
+                A - F,L have the same meaning as in "request" and must be repeated
                 G - units
                 K_i - key (UTC unix timestamp)
                 V_i - value (value)
