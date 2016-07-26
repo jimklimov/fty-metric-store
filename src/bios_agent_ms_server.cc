@@ -83,7 +83,7 @@ REQ-REP:
 
 #include "agent_metric_store_classes.h"
 
-#define POLL_INTERVAL 10000
+#define POLL_INTERVAL 1000
 
 #define AVG_GRAPH "aggregated data"
 /**
@@ -446,6 +446,12 @@ bios_agent_ms_server (zsock_t *pipe, void* args)
     while (!zsys_interrupted) {
         void *which = zpoller_wait (poller, timeout);
         if (which == NULL) {
+            if (zpoller_expired (poller) && !zsys_interrupted ){
+                //do a periodic flush 
+                flush_measurement_when_needed(url);
+                continue;
+            }
+            
             if (zpoller_terminated (poller) || zsys_interrupted) {
                 zsys_warning ("zpoller_terminated () or zsys_interrupted");
                 break;
@@ -495,6 +501,7 @@ bios_agent_ms_server (zsock_t *pipe, void* args)
 
         zmsg_destroy (&message);
     } // while (!zsys_interrupted)
+    flush_measurement(url);
 
     zpoller_destroy (&poller);
     mlm_client_destroy (&client);
