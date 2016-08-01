@@ -262,8 +262,8 @@ void
             return;
         }
         st = conn.prepare(query.c_str());
-        int affected_rows = st.execute();
-        zsys_debug("[t_bios_measurement]: flush  measurements from cache, inserted %" PRIu64 " rows ",
+        uint32_t affected_rows = st.execute();
+        zsys_debug("[t_bios_measurement]: flush  measurements from cache, inserted %" PRIu32 " rows ",
                 affected_rows);
         _row_cache.clear();
     } catch(const std::exception &e) {
