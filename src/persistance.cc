@@ -323,7 +323,7 @@ int
     try {
         m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name);
         if ( topic_id == 0 ) {
-            // topic was not inserted -> cannot insert metric
+            zsys_error ("topic '%s' was not inserted -> cannot insert metric", topic);
             return 1;
         }
         _row_cache.push_back(time,value,scale,topic_id);
