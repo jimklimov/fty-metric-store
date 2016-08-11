@@ -254,10 +254,10 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
         if ( rv == -2 ) {
-            zsys_error ("topic is not found");
+            zsys_error ("average request: topic is not found");
             zmsg_addstr (msg_out, "BAD_REQUEST");
         } else {
-            zsys_error ("unexpected error during topic selecting");
+            zsys_error ("average request: unexpected error during topic selecting");
             zmsg_addstr (msg_out, "INTERNAL_ERROR");
         }
         goto exit;
