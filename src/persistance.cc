@@ -58,7 +58,7 @@ int
         return 0;
     }
     catch (const tntdb::NotFound &e) {
-        zsys_info("Topic '%s' not found. Will be created if needed.", topic.c_str());
+        zsys_info("Topic '%s' not found.", topic.c_str());
         return -2;
     }
     catch (const std::exception &e) {
