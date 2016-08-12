@@ -75,7 +75,7 @@ bool
     long now_ms = get_clock_ms();
     long elapsed_periodic_ms = (now_ms - _first_ms);
     //check if max time duration expired or max cache size limit reached
-    return (_row_cache.size()>=_max_row || elapsed_periodic_ms >= (long)_max_delay_s * 1000 );
+    return (_row_cache.size()>=_max_row || elapsed_periodic_ms >= _max_delay_s * 1000 );
     
 }
 /* return INSERT query or empty string if no value in cache available*/
