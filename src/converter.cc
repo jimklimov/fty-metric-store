@@ -1,21 +1,21 @@
 /*  =========================================================================
     converter - Some helper forntions to convert between types
 
-    Copyright (C) 2014 - 2015 Eaton                                        
-                                                                           
-    This program is free software; you can redistribute it and/or modify   
-    it under the terms of the GNU General Public License as published by   
-    the Free Software Foundation; either version 2 of the License, or      
-    (at your option) any later version.                                    
-                                                                           
-    This program is distributed in the hope that it will be useful,        
-    but WITHOUT ANY WARRANTY; without even the implied warranty of         
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
-    GNU General Public License for more details.                           
-                                                                           
+    Copyright (C) 2014 - 2015 Eaton
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.            
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     =========================================================================
 */
 
@@ -29,7 +29,7 @@
 #include "agent_metric_store_classes.h"
 
 
-bool 
+bool
 stobiosf (const std::string& string, int32_t& integer, int8_t& scale)
 {
     // Note: Shall performance __really__ become an issue, consider
@@ -64,7 +64,7 @@ stobiosf (const std::string& string, int32_t& integer, int8_t& scale)
     if (std::isinf (temp)) {
         log_error ("std::isinf (temp) == true");
         return false;
-    }   
+    }
 
     // parse out the string
     std::string integer_string, fraction_string;
@@ -124,7 +124,7 @@ stobiosf (const std::string& string, int32_t& integer, int8_t& scale)
         sum = sum - fraction_part;
     else
         sum = sum + fraction_part;
-    
+
     if ( sum > std::numeric_limits<int32_t>::max ()) {
         log_error ("sum > std::numeric_limits <int32_t>::max () -- '%" PRIi64"' > '%" PRIi32"'",
                 sum, std::numeric_limits<int32_t>::max ());
@@ -169,10 +169,10 @@ stobiosf_wrapper (const std::string& string, int32_t& integer, int8_t& scale)
     std::string::size_type comma = string.find (".");
     if (comma == std::string::npos)
         return false;
-    
+
     std::string stripped = string;
     std::string fraction = string.substr (comma + 1);
-    if (fraction.size () > 2) { 
+    if (fraction.size () > 2) {
         stripped = stripped.substr (0, stripped.size () - (fraction.size () - 2));
     }
     return stobiosf (stripped, integer, scale);
@@ -207,11 +207,11 @@ converter_test (bool verbose)
     assert ( stobiosf ("12.835", integer, scale));
     assert ( integer == 12835 );
     assert ( scale == -3 );
- 
+
     assert ( stobiosf ("178746.2332", integer, scale));
     assert ( integer == 1787462332 );
     assert ( scale == -4 );
- 
+
     assert ( stobiosf ("0.00004", integer, scale));
     assert ( integer == 4 );
     assert ( scale == -5 );
@@ -231,7 +231,7 @@ converter_test (bool verbose)
     assert ( stobiosf ("0", integer, scale) );
     assert ( integer == 0 );
     assert ( scale == 0 );
-    
+
     assert ( stobiosf ("1", integer, scale) );
     assert ( integer == 1 );
     assert ( scale == 0 );
@@ -255,10 +255,10 @@ converter_test (bool verbose)
     assert ( stobiosf ("1234324532452345623541.00", integer, scale) == false );
 
     assert ( stobiosf ("2.532132356545624522452456", integer, scale) == false );
-    
+
     assert ( stobiosf ("12x43", integer, scale) == false );
     assert ( stobiosf ("sdfsd", integer, scale) == false );
-    
+
     assert ( string_to_int64( "1234" ) == 1234 );
 
     //  @end
