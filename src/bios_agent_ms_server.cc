@@ -1,21 +1,21 @@
 /*  =========================================================================
     bios_agent_ms_server - Actor listening on metrics with request reply protocol for graphs
 
-    Copyright (C) 2014 - 2015 Eaton                                        
-                                                                           
-    This program is free software; you can redistribute it and/or modify   
-    it under the terms of the GNU General Public License as published by   
-    the Free Software Foundation; either version 2 of the License, or      
-    (at your option) any later version.                                    
-                                                                           
-    This program is distributed in the hope that it will be useful,        
-    but WITHOUT ANY WARRANTY; without even the implied warranty of         
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
-    GNU General Public License for more details.                           
-                                                                           
+    Copyright (C) 2014 - 2015 Eaton
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.            
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     =========================================================================
 */
 
@@ -73,7 +73,7 @@ REQ-REP:
     request:
         subject: UNSUPPORTED_SUBJECT
         body: any message
- 
+
     reply:
         subject: UNSUPPORTED_SUBJECT
         body: a multipart string message "ERROR"/"UNSUPPORTED_SUBJECT"
@@ -318,13 +318,13 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
-    zmsg_t *msg_out = NULL; 
+    zmsg_t *msg_out = NULL;
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
         msg_out = s_handle_aggregate (client, message_p);
     } else {
         zsys_error ("Unsupported subject '%s'",  mlm_client_subject (client));
         zmsg_destroy (message_p);
-        msg_out = zmsg_new(); 
+        msg_out = zmsg_new();
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "UNSUPPORTED_SUBJECT");
     }
@@ -358,7 +358,7 @@ s_process_metric (bios_proto_t *m)
         if (!stobiosf_wrapper (bios_proto_value (m), integer, lscale)) {
             zsys_error ("value '%s' of the metric is not double", bios_proto_value (m));
             return;
-        }        
+        }
         value = integer;
         scale = lscale;
     }

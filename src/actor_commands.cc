@@ -1,21 +1,21 @@
 /*  =========================================================================
     actor_commands - actor commands
 
-    Copyright (C) 2014 - 2015 Eaton                                        
-                                                                           
-    This program is free software; you can redistribute it and/or modify   
-    it under the terms of the GNU General Public License as published by   
-    the Free Software Foundation; either version 2 of the License, or      
-    (at your option) any later version.                                    
-                                                                           
-    This program is distributed in the hope that it will be useful,        
-    but WITHOUT ANY WARRANTY; without even the implied warranty of         
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
-    GNU General Public License for more details.                           
-                                                                           
+    Copyright (C) 2014 - 2015 Eaton
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.            
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     =========================================================================
 */
 
@@ -34,7 +34,7 @@ actor_commands (
 
     assert (message_p && *message_p);
     zmsg_t *message = *message_p;
-    
+
     char *cmd = zmsg_popstr (message);
     if (!cmd) {
         log_error (
@@ -47,6 +47,7 @@ actor_commands (
     int ret = 0;
     log_debug ("actor command = '%s'", cmd);
     if (streq (cmd, "$TERM")) {
+        log_info ("Got $TERM");
         ret = 1;
     }
     else
@@ -213,10 +214,10 @@ actor_commands_test (bool verbose)
     // empty string - expected fail
     message = zmsg_new ();
     assert (message);
-    zmsg_addstr (message, "");   
+    zmsg_addstr (message, "");
     rv = actor_commands (client, &message);
     assert (rv == 0);
-    assert (message == NULL);  
+    assert (message == NULL);
 
     STDERR_NON_EMPTY
 
@@ -225,10 +226,10 @@ actor_commands_test (bool verbose)
     // unknown command - expected fail
     message = zmsg_new ();
     assert (message);
-    zmsg_addstr (message, "MAGIC!");   
+    zmsg_addstr (message, "MAGIC!");
     rv = actor_commands (client, &message);
     assert (rv == 0);
-    assert (message == NULL);  
+    assert (message == NULL);
 
     STDERR_NON_EMPTY
 
@@ -266,7 +267,7 @@ actor_commands_test (bool verbose)
     // CONNECT - expected fail
     message = zmsg_new ();
     assert (message);
-    zmsg_addstr (message, "CONNECT");   
+    zmsg_addstr (message, "CONNECT");
     zmsg_addstr (message, endpoint);
     // missing name here
     rv = actor_commands (client, &message);
@@ -280,12 +281,12 @@ actor_commands_test (bool verbose)
     // CONNECT - expected fail
     message = zmsg_new ();
     assert (message);
-    zmsg_addstr (message, "CONNECT");   
+    zmsg_addstr (message, "CONNECT");
     // missing endpoint here
     // missing name here
     rv = actor_commands (client, &message);
     assert (rv == 0);
-    assert (message == NULL);  
+    assert (message == NULL);
 
     STDERR_NON_EMPTY
 
@@ -294,12 +295,12 @@ actor_commands_test (bool verbose)
     // CONNECT - expected fail; bad endpoint
     message = zmsg_new ();
     assert (message);
-    zmsg_addstr (message, "CONNECT");   
+    zmsg_addstr (message, "CONNECT");
     zmsg_addstr (message, "ipc://bios-ws-server-BAD");
     zmsg_addstr (message, "test-agent");
     rv = actor_commands (client, &message);
     assert (rv == 0);
-    assert (message == NULL);  
+    assert (message == NULL);
 
     STDERR_NON_EMPTY
 
@@ -310,12 +311,12 @@ actor_commands_test (bool verbose)
     assert (client);
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);    
+    fp = freopen ("stderr.txt", "w+", stderr);
 
     // $TERM
     message = zmsg_new ();
     assert (message);
-    zmsg_addstr (message, "$TERM");   
+    zmsg_addstr (message, "$TERM");
     rv = actor_commands (client, &message);
     assert (rv == 1);
     assert (message == NULL);
@@ -323,9 +324,9 @@ actor_commands_test (bool verbose)
     // CONNECT
     message = zmsg_new ();
     assert (message);
-    zmsg_addstr (message, "CONNECT");   
+    zmsg_addstr (message, "CONNECT");
     zmsg_addstr (message, endpoint);
-    zmsg_addstr (message, "test-agent");   
+    zmsg_addstr (message, "test-agent");
     rv = actor_commands (client, &message);
     assert (rv == 0);
     assert (message == NULL);
@@ -334,8 +335,8 @@ actor_commands_test (bool verbose)
     message = zmsg_new ();
     assert (message);
     zmsg_addstr (message, "CONSUMER");
-    zmsg_addstr (message, "some-stream");   
-    zmsg_addstr (message, ".+@.+");   
+    zmsg_addstr (message, "some-stream");
+    zmsg_addstr (message, ".+@.+");
     rv = actor_commands (client, &message);
     assert (rv == 0);
     assert (message == NULL);
@@ -344,7 +345,7 @@ actor_commands_test (bool verbose)
     message = zmsg_new ();
     assert (message);
     zmsg_addstr (message, "PRODUCER");
-    zmsg_addstr (message, "some-stream");   
+    zmsg_addstr (message, "some-stream");
     rv = actor_commands (client, &message);
     assert (rv == 0);
     assert (message == NULL);
@@ -352,12 +353,12 @@ actor_commands_test (bool verbose)
     STDERR_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);    
+    fp = freopen ("stderr.txt", "w+", stderr);
     // CONSUMER - expected fail
     message = zmsg_new ();
     assert (message);
     zmsg_addstr (message, "CONSUMER");
-    zmsg_addstr (message, "some-stream");   
+    zmsg_addstr (message, "some-stream");
     // missing pattern here
     rv = actor_commands (client, &message);
     assert (rv == 0);
@@ -366,7 +367,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);    
+    fp = freopen ("stderr.txt", "w+", stderr);
     // CONSUMER - expected fail
     message = zmsg_new ();
     assert (message);
@@ -380,7 +381,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);    
+    fp = freopen ("stderr.txt", "w+", stderr);
     // PRODUCER - expected fail
     message = zmsg_new ();
     assert (message);
