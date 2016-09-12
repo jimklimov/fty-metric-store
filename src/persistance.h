@@ -86,6 +86,13 @@ AGENT_METRIC_STORE_EXPORT
 void
     persistance_test (bool verbose);
 
+AGENT_METRIC_STORE_EXPORT
+void 
+    flush_measurement_when_needed(std::string &url);
+
+AGENT_METRIC_STORE_EXPORT
+void
+    flush_measurement(std::string &url);
 //  @end
 
 #ifdef __cplusplus

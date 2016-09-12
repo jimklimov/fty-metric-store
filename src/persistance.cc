@@ -27,7 +27,11 @@
 */
 
 #include "agent_metric_store_classes.h"
+#include "topic_cache.h"
+#include "multi_row.h"
 
+TopicCache _topic_cache;
+MultiRowCache _row_cache;
 
 int
     select_topic (
@@ -206,6 +210,10 @@ m_msrmnt_tpc_id_t
     assert ( units );
     assert ( device_name );
 
+    // is it in the topic cache ?
+    if (  _topic_cache.has(topic) ){
+        return _topic_cache.get(topic);
+    }
     m_dvc_id_t id_discovered_device = prepare_discovered_device (conn, device_name);
     if ( id_discovered_device == 0 ) {
         return 0;
@@ -228,6 +236,7 @@ m_msrmnt_tpc_id_t
 
         m_msrmnt_tpc_id_t topic_id = conn.lastInsertId();
         if ( topic_id != 0 ) {
+            _topic_cache.add(topic,topic_id);
             zsys_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows , topic_id %u", topic, n, topic_id);
         } else {
             zsys_error("[t_bios_measurement_topic]:  topic %s not inserted", topic);
@@ -236,6 +245,58 @@ m_msrmnt_tpc_id_t
     } catch(const std::exception &e) {
         zsys_error ("Topic '%s' was not inserted with error: %s", topic, e.what());
         return 0;
+    }
+}
+
+
+
+void
+    flush_measurement(tntdb::Connection &conn)
+{
+    zsys_debug("flush_measurement");
+    try {
+        tntdb::Statement st;
+        string query = _row_cache.get_insert_query();
+        if(query.length()==0){
+            _row_cache.reset_clock();
+            return;
+        }
+        st = conn.prepare(query.c_str());
+        uint32_t affected_rows = st.execute();
+        zsys_debug("[t_bios_measurement]: flush  measurements from cache, inserted %" PRIu32 " rows ",
+                affected_rows);
+        _row_cache.clear();
+    } catch(const std::exception &e) {
+        zsys_error ("Abnormal flush termination");
+    }
+}
+
+void
+    flush_measurement(std::string &url)
+{
+    tntdb::Connection conn;
+    try {
+            conn = tntdb::connectCached(url);
+            conn.ping();
+        } catch (const std::exception &e) {
+            zsys_error("Can't connect to the database");
+            return;
+        }
+    flush_measurement(conn);
+}
+// Do a flush only if cache is full or enough time elapsed since the last flush
+void 
+    flush_measurement_when_needed(tntdb::Connection &conn)
+{
+    if (_row_cache.is_ready_for_insert()){
+        flush_measurement(conn);
+    }
+}
+void 
+    flush_measurement_when_needed(std::string &url)
+{
+    if (_row_cache.is_ready_for_insert()){
+        flush_measurement(url);
     }
 }
 
@@ -265,20 +326,8 @@ int
             zsys_error ("topic '%s' was not inserted -> cannot insert metric", topic);
             return 1;
         }
-        tntdb::Statement st = conn.prepareCached (
-                "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
-                "  VALUES (:time, :value, :scale, :topic_id)"
-                "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
-        st.set("time",  time)
-            .set("value", value)
-            .set("scale", scale)
-            .set("topic_id", topic_id)
-            .execute();
-
-        zsys_debug("[t_bios_measurement]: inserted " \
-                "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64,
-                value, scale, units, topic, topic_id, time);
+        _row_cache.push_back(time,value,scale,topic_id);
+        flush_measurement_when_needed(conn);
         return 0;
     } catch(const std::exception &e) {
         zsys_error ("Metric with topic '%s' was not inserted with error: %s", topic, e.what());

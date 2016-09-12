@@ -70,10 +70,10 @@ void insert_new_measurement(
 ){
     char topic_name[32];
     char device_name[32];
-
-    sprintf(topic_name,"bench.topic%d",topic_id);
+    
     sprintf(device_name,"bench.asset%d",device_id);
-
+    sprintf(topic_name,"bench.topic%d@%s",topic_id,device_name);
+    
     insert_into_measurement(
             conn, topic_name, rand() % 999999, 0, time(NULL),
             "%", device_name);
@@ -99,9 +99,6 @@ void bench(
 
     zsys_info("delay=%dms periodic=%ds minute=%dm element=%d topic=%d insert_every=%d",
             delay,periodic_display,total_duration,num_device,topic_per_device,insertion);
-
-    //persist::TopicCache topic_cache{(size_t)(num_device*topic_per_device)};
-    //persist::MultiRowCache multi_row = persist::MultiRowCache(insertion,10);
     tntdb::Connection conn;
     try {
         conn = tntdb::connectCached(url);
@@ -118,15 +115,16 @@ void bench(
 
     long begin_overall_ms = get_clock_ms();
     long begin_periodic_ms = get_clock_ms();
+    
+    int dev_by_topic=num_device * topic_per_device;
 
-   zsys_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
+    zsys_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
     while(!zsys_interrupted) {
-        insert_new_measurement(rand() % num_device, rand() % topic_per_device,
+        insert_new_measurement(stat_total_row%dev_by_topic/topic_per_device, stat_total_row%topic_per_device,
                 conn);
         //count stat
         stat_total_row++;
         stat_periodic_row++;
-
         //time to display stat ?
         long now_ms = get_clock_ms();
         long elapsed_periodic_ms = (now_ms - begin_periodic_ms);
@@ -141,10 +139,9 @@ void bench(
         //sleep before loop
         if(delay>0)usleep(delay*1000);
     }
-    //persist::flush_measurement(multi_row);
-
 
 exit:
+    flush_measurement(url);
     long elapsed_overall_ms = (get_clock_ms() - begin_overall_ms);
 
     zsys_info("%d rows inserted in  %.2lf seconds, overall avg=%.2lf row/s",stat_total_row,elapsed_overall_ms/1000.0,stat_total_row/(elapsed_overall_ms/1000.0));
