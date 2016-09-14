@@ -27,10 +27,8 @@
 */
 
 #include "agent_metric_store_classes.h"
-#include "topic_cache.h"
 #include "multi_row.h"
 
-TopicCache _topic_cache;
 MultiRowCache _row_cache;
 
 int
@@ -210,10 +208,6 @@ m_msrmnt_tpc_id_t
     assert ( units );
     assert ( device_name );
 
-    // is it in the topic cache ?
-    if (  _topic_cache.has(topic) ){
-        return _topic_cache.get(topic);
-    }
     m_dvc_id_t id_discovered_device = prepare_discovered_device (conn, device_name);
     if ( id_discovered_device == 0 ) {
         return 0;
@@ -236,7 +230,6 @@ m_msrmnt_tpc_id_t
 
         m_msrmnt_tpc_id_t topic_id = conn.lastInsertId();
         if ( topic_id != 0 ) {
-            _topic_cache.add(topic,topic_id);
             zsys_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows , topic_id %u", topic, n, topic_id);
         } else {
             zsys_error("[t_bios_measurement_topic]:  topic %s not inserted", topic);

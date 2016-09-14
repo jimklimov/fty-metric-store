@@ -23,7 +23,6 @@ src_libagent_metric_store_la_SOURCES = \
     src/converter.cc \
     src/persistance.cc \
     src/bios_agent_ms_server.cc \
-    src/topic_cache.cc \
     src/multi_row.cc \
     src/platform.h
 
