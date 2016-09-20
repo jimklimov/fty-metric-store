@@ -1,21 +1,21 @@
 /*  =========================================================================
     bios_agent_ms_server - Actor listening on metrics with request reply protocol for graphs
 
-    Copyright (C) 2014 - 2015 Eaton                                        
-                                                                           
-    This program is free software; you can redistribute it and/or modify   
-    it under the terms of the GNU General Public License as published by   
-    the Free Software Foundation; either version 2 of the License, or      
-    (at your option) any later version.                                    
-                                                                           
-    This program is distributed in the hope that it will be useful,        
-    but WITHOUT ANY WARRANTY; without even the implied warranty of         
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
-    GNU General Public License for more details.                           
-                                                                           
+    Copyright (C) 2014 - 2015 Eaton
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.            
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     =========================================================================
 */
 
@@ -28,7 +28,7 @@
 REQ-REP:
     request:
         subject: "aggregated data"
-        body: a multipart string message "GET"/A/B/C/D/E/F
+        body: a multipart string message "GET"/A/B/C/D/E/F/L (8 frames ALWAYS)
 
             where:
                 A - element name
@@ -37,22 +37,23 @@ REQ-REP:
                 D - type (min, max, arithmetic_mean)
                 E - start timestamp (UTC unix timestamp)
                 F - end timestamp (UTC unix timestamp)
+                L - 1 -> do order ; 0 -> do NOT order data. (by timestamp ascending)
 
             example:
-                "GET/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"
+                "GET/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"0"
 
     reply:
         subject: "aggregated data"
-        body on success: a multipart string message "OK"/A/B/C/D/E/F/G/[K_i/V_i]
+        body on success: a multipart string message "OK"/A/B/C/D/E/F/L/G/[K_i/V_i]
 
             where:
-                A - F have the same meaning as in "request" and must be repeated
+                A - F,L have the same meaning as in "request" and must be repeated
                 G - units
                 K_i - key (UTC unix timestamp)
                 V_i - value (value)
 
             example:
-                "OK"/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
+                "OK"/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"0"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
 
 
         body on error: a multipart string message "ERROR"/R
@@ -64,6 +65,7 @@ REQ-REP:
                     "INTERNAL_ERROR" when error occured during fetching the rows
                     "BAD_REQUEST" requested information is not monitored by the system
                             (missing record in the t_bios_measurement_table)
+                    "BAD_ORDERED" when parameter ordered has not allowed value
 
             example:
                 "ERROR"/"BAD_MESSAGE"
@@ -71,7 +73,7 @@ REQ-REP:
     request:
         subject: UNSUPPORTED_SUBJECT
         body: any message
- 
+
     reply:
         subject: UNSUPPORTED_SUBJECT
         body: a multipart string message "ERROR"/"UNSUPPORTED_SUBJECT"
@@ -81,7 +83,7 @@ REQ-REP:
 
 #include "agent_metric_store_classes.h"
 
-#define POLL_INTERVAL 10000
+#define POLL_INTERVAL 1000
 
 #define AVG_GRAPH "aggregated data"
 /**
@@ -103,7 +105,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     assert (client);
     assert (message_p && *message_p);
     zmsg_t *msg_out = zmsg_new();
-    if ( zmsg_size(*message_p) < 7 ) {
+    if ( zmsg_size(*message_p) < 8 ) {
         zmsg_destroy (message_p);
         zsys_error ("Message has unsupported format, ignore it");
         zmsg_addstr (msg_out, "ERROR");
@@ -129,7 +131,8 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     char *aggr_type = zmsg_popstr (msg);
     char *start_date_str = zmsg_popstr (msg);
     char *end_date_str = zmsg_popstr (msg);
-
+    char *ordered = zmsg_popstr (msg);
+    bool is_ordered = false;
     int64_t start_date = 0;
     int64_t end_date = 0;
     std::string topic;
@@ -179,6 +182,13 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         goto exit;
     }
 
+    if ( !ordered ) {
+        zsys_error ("ordered is empty");
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_MESSAGE");
+        goto exit;
+    }
+
     start_date = string_to_int64 (start_date_str);
     if (errno != 0) {
         errno = 0;
@@ -204,6 +214,13 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         goto exit;
     }
 
+    if ( !streq (ordered, "1") && !streq (ordered, "0") ) {
+        zsys_error ("ordered is not 1/0");
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "BAD_ORDERED");
+        goto exit;
+    }
+
     topic += quantity;
     topic += "_"; // TODO: when ecpp files would be changed -> take another character
     topic += aggr_type;
@@ -220,6 +237,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     zmsg_addstr (msg_out, aggr_type);
     zmsg_addstr (msg_out, start_date_str);
     zmsg_addstr (msg_out, end_date_str);
+    zmsg_addstr (msg_out, ordered);
 
     select_units = [&msg_out](const tntdb::Row& r)
         {
@@ -236,10 +254,10 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
         if ( rv == -2 ) {
-            zsys_error ("topic is not found");
+            zsys_error ("average request: topic is not found");
             zmsg_addstr (msg_out, "BAD_REQUEST");
         } else {
-            zsys_error ("unexpected error during topic selecting");
+            zsys_error ("average request: unexpected error during topic selecting");
             zmsg_addstr (msg_out, "INTERNAL_ERROR");
         }
         goto exit;
@@ -261,7 +279,8 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
             zmsg_addstr (msg_out, std::to_string(real_value).c_str());
         };
 
-    rv = select_measurements (url, topic, start_date, end_date, add_measurement);
+    is_ordered = streq (ordered, "1");
+    rv = select_measurements (url, topic, start_date, end_date, add_measurement, is_ordered);
     if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
         zsys_error ("unexpected error during measurement selecting");
@@ -272,6 +291,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     }
 
 exit:
+    zstr_free (&ordered);
     zstr_free (&end_date_str);
     zstr_free (&start_date_str);
     zstr_free (&aggr_type);
@@ -298,13 +318,13 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
-    zmsg_t *msg_out = NULL; 
+    zmsg_t *msg_out = NULL;
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
         msg_out = s_handle_aggregate (client, message_p);
     } else {
         zsys_error ("Unsupported subject '%s'",  mlm_client_subject (client));
         zmsg_destroy (message_p);
-        msg_out = zmsg_new(); 
+        msg_out = zmsg_new();
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "UNSUPPORTED_SUBJECT");
     }
@@ -338,7 +358,7 @@ s_process_metric (bios_proto_t *m)
         if (!stobiosf_wrapper (bios_proto_value (m), integer, lscale)) {
             zsys_error ("value '%s' of the metric is not double", bios_proto_value (m));
             return;
-        }        
+        }
         value = integer;
         scale = lscale;
     }
@@ -426,6 +446,12 @@ bios_agent_ms_server (zsock_t *pipe, void* args)
     while (!zsys_interrupted) {
         void *which = zpoller_wait (poller, timeout);
         if (which == NULL) {
+            if (zpoller_expired (poller) && !zsys_interrupted ){
+                //do a periodic flush 
+                flush_measurement_when_needed(url);
+                continue;
+            }
+            
             if (zpoller_terminated (poller) || zsys_interrupted) {
                 zsys_warning ("zpoller_terminated () or zsys_interrupted");
                 break;
@@ -475,6 +501,7 @@ bios_agent_ms_server (zsock_t *pipe, void* args)
 
         zmsg_destroy (&message);
     } // while (!zsys_interrupted)
+    flush_measurement(url);
 
     zpoller_destroy (&poller);
     mlm_client_destroy (&client);
@@ -487,7 +514,7 @@ void
 bios_agent_ms_server_test (bool verbose)
 {
     printf (" * bios_agent_ms_server: ");
-/* the test requires some DB state, so turn off for now
+/*// the test requires some DB state, so turn off for now
     //  @selftest
     static const char* endpoint = "ipc://bios-ms-server-test";
 
@@ -548,6 +575,7 @@ bios_agent_ms_server_test (bool verbose)
     zmsg_addstr (msg, "min");
     zmsg_addstr (msg, std::to_string(timestamp - 100).c_str());
     zmsg_addstr (msg, std::to_string(timestamp + 100).c_str());
+    zmsg_addstr (msg, "0");
 
     zsys_info ("before waiting");
     mlm_client_sendto (ui_req_rep, "agent-ms", AVG_GRAPH, NULL, 1000, &msg);
@@ -555,6 +583,10 @@ bios_agent_ms_server_test (bool verbose)
     msg = mlm_client_recv (ui_req_rep);
     assert (msg);
     zmsg_print (msg);
+    char *first_frame = zmsg_popstr (msg);
+    zsys_debug ("%s", first_frame);
+    assert ( streq (first_frame, "OK") == true );
+    zstr_free (&first_frame);
     zmsg_destroy (&msg);
     //  @end
     mlm_client_destroy (&metric_producer);
@@ -602,7 +634,7 @@ bios_agent_ms_server_test (bool verbose)
     zsys_debug ( "##\tscenario 2:");
     // 1. send metric (3 times)
     // 2. send asset delete
-    //
+    // GOAL: check memory leak in agent
     zhash_t *aux = zhash_new();
     zhash_autofree(aux);
     uint64_t timestamp = ::time(NULL) - 200;

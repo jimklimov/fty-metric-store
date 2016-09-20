@@ -1,21 +1,21 @@
 /*  =========================================================================
     persistance - Some helper functions for persistance layer
 
-    Copyright (C) 2014 - 2015 Eaton                                        
-                                                                           
-    This program is free software; you can redistribute it and/or modify   
-    it under the terms of the GNU General Public License as published by   
-    the Free Software Foundation; either version 2 of the License, or      
-    (at your option) any later version.                                    
-                                                                           
-    This program is distributed in the hope that it will be useful,        
-    but WITHOUT ANY WARRANTY; without even the implied warranty of         
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
-    GNU General Public License for more details.                           
-                                                                           
+    Copyright (C) 2014 - 2015 Eaton
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.            
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     =========================================================================
 */
 
@@ -27,7 +27,9 @@
 */
 
 #include "agent_metric_store_classes.h"
+#include "multi_row.h"
 
+MultiRowCache _row_cache;
 
 int
     select_topic (
@@ -54,7 +56,7 @@ int
         return 0;
     }
     catch (const tntdb::NotFound &e) {
-        zsys_info("Topic '%s' not found. Will be created if needed.", topic.c_str());
+        zsys_info("Topic '%s' not found.", topic.c_str());
         return -2;
     }
     catch (const std::exception &e) {
@@ -76,20 +78,23 @@ int
         int64_t start_timestamp,
         int64_t end_timestamp,
         std::function<void(
-                        const tntdb::Row&)>& cb)
+                        const tntdb::Row&)>& cb,
+        bool is_ordered)
 {
     try {
         tntdb::Connection conn = tntdb::connectCached(connurl);
-
-        tntdb::Statement st = conn.prepareCached (
+        std::string query =
             " SELECT "
-            "   topic, value, scale, timestamp, units"
+            "   topic, value, scale, timestamp, units "
             " FROM v_bios_measurement "
             " WHERE "
             "   topic = :topic AND "
             "   timestamp >= :time_st AND "
-            "   timestamp <= :time_end"
-        );
+            "   timestamp <= :time_end ";
+        if ( is_ordered ) {
+            query += " ORDER BY timestamp ASC";
+        }
+        tntdb::Statement st = conn.prepareCached (query);
         // ACE: I know, that topic_id would have better performance, but
         // for first iteration lets stay with this approach
         tntdb::Result result = st.set ("topic", topic)
@@ -237,6 +242,58 @@ m_msrmnt_tpc_id_t
 }
 
 
+
+void
+    flush_measurement(tntdb::Connection &conn)
+{
+    zsys_debug("flush_measurement");
+    try {
+        tntdb::Statement st;
+        string query = _row_cache.get_insert_query();
+        if(query.length()==0){
+            _row_cache.reset_clock();
+            return;
+        }
+        st = conn.prepare(query.c_str());
+        uint32_t affected_rows = st.execute();
+        zsys_debug("[t_bios_measurement]: flush  measurements from cache, inserted %" PRIu32 " rows ",
+                affected_rows);
+        _row_cache.clear();
+    } catch(const std::exception &e) {
+        zsys_error ("Abnormal flush termination");
+    }
+}
+
+void
+    flush_measurement(std::string &url)
+{
+    tntdb::Connection conn;
+    try {
+            conn = tntdb::connectCached(url);
+            conn.ping();
+        } catch (const std::exception &e) {
+            zsys_error("Can't connect to the database");
+            return;
+        }
+    flush_measurement(conn);
+}
+// Do a flush only if cache is full or enough time elapsed since the last flush
+void 
+    flush_measurement_when_needed(tntdb::Connection &conn)
+{
+    if (_row_cache.is_ready_for_insert()){
+        flush_measurement(conn);
+    }
+}
+void 
+    flush_measurement_when_needed(std::string &url)
+{
+    if (_row_cache.is_ready_for_insert()){
+        flush_measurement(url);
+    }
+}
+
+
 int
     insert_into_measurement(
         tntdb::Connection &conn,
@@ -259,23 +316,11 @@ int
     try {
         m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name);
         if ( topic_id == 0 ) {
-            // topic was not inserted -> cannot insert metric
+            zsys_error ("topic '%s' was not inserted -> cannot insert metric", topic);
             return 1;
         }
-        tntdb::Statement st = conn.prepareCached (
-                "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
-                "  VALUES (:time, :value, :scale, :topic_id)"
-                "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
-        st.set("time",  time)
-            .set("value", value)
-            .set("scale", scale)
-            .set("topic_id", topic_id)
-            .execute();
-
-        zsys_debug("[t_bios_measurement]: inserted " \
-                "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64,
-                value, scale, units, topic, topic_id, time);
+        _row_cache.push_back(time,value,scale,topic_id);
+        flush_measurement_when_needed(conn);
         return 0;
     } catch(const std::exception &e) {
         zsys_error ("Metric with topic '%s' was not inserted with error: %s", topic, e.what());

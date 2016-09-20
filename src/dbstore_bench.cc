@@ -21,7 +21,7 @@
 /*!
  * \file dbstore_bench.cc
  * \author Gerald Guillaume <GeraldGuillaume@Eaton.com>
- * \brief do intensive and endurance insertion job 
+ * \brief do intensive and endurance insertion job
  */
 #include <getopt.h>
 #include <ctime>
@@ -61,8 +61,8 @@ char *get_clock_fmt(){
 
 /* Insert one measurement on a random device, a random topic and a random value
  */
-void insert_new_measurement( 
-        int device_id, 
+void insert_new_measurement(
+        int device_id,
         int topic_id,
         tntdb::Connection conn
         //persist::TopicCache &cache,
@@ -71,8 +71,8 @@ void insert_new_measurement(
     char topic_name[32];
     char device_name[32];
     
-    sprintf(topic_name,"bench.topic%d",topic_id);
     sprintf(device_name,"bench.asset%d",device_id);
+    sprintf(topic_name,"bench.topic%d@%s",topic_id,device_name);
     
     insert_into_measurement(
             conn, topic_name, rand() % 999999, 0, time(NULL),
@@ -81,27 +81,24 @@ void insert_new_measurement(
 }
 /*
  * do the bench insertion
- * \param delay       - pause between each insertion (in ms), 0 means no delay 
- * \param num_device  - number of simulated device  
- * \param topic_per_device  - number of topic per device simulated  
+ * \param delay       - pause between each insertion (in ms), 0 means no delay
+ * \param num_device  - number of simulated device
+ * \param topic_per_device  - number of topic per device simulated
  * \param total_duration    - bench duration in minute, -1 means infinite loop
  * \param insertion         - number of maximum row before inserting in multi-row
- * \param periodic_display  - Each periodic_display seconds, output 
+ * \param periodic_display  - Each periodic_display seconds, output
  *  time; total rows; row over since periodic_display s  ; average since periodic_display s
- */ 
+ */
 void bench(
-        int delay=100, 
-        int num_device=100, 
-        int topic_per_device=100, 
-        int periodic_display=10, 
-        int total_duration=-1, 
+        int delay=100,
+        int num_device=100,
+        int topic_per_device=100,
+        int periodic_display=10,
+        int total_duration=-1,
         int insertion=10){
-    
-    zsys_info("delay=%dms periodic=%ds minute=%dm element=%d topic=%d insert_every=%d", 
+
+    zsys_info("delay=%dms periodic=%ds minute=%dm element=%d topic=%d insert_every=%d",
             delay,periodic_display,total_duration,num_device,topic_per_device,insertion);
-    
-    //persist::TopicCache topic_cache{(size_t)(num_device*topic_per_device)};
-    //persist::MultiRowCache multi_row = persist::MultiRowCache(insertion,10);
     tntdb::Connection conn;
     try {
         conn = tntdb::connectCached(url);
@@ -110,23 +107,24 @@ void bench(
         zsys_error("Can't connect to the database");
         return;
     }
-    
-    int stat_total_row=0; 
-    int stat_periodic_row=0; 
-    
+
+    int stat_total_row=0;
+    int stat_periodic_row=0;
+
     zsys_catch_interrupts ();
-    
+
     long begin_overall_ms = get_clock_ms();
     long begin_periodic_ms = get_clock_ms();
+    
+    int dev_by_topic=num_device * topic_per_device;
 
-   zsys_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
+    zsys_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
     while(!zsys_interrupted) {
-        insert_new_measurement(rand() % num_device, rand() % topic_per_device,
+        insert_new_measurement(stat_total_row%dev_by_topic/topic_per_device, stat_total_row%topic_per_device,
                 conn);
         //count stat
-        stat_total_row++; 
+        stat_total_row++;
         stat_periodic_row++;
-        
         //time to display stat ?
         long now_ms = get_clock_ms();
         long elapsed_periodic_ms = (now_ms - begin_periodic_ms);
@@ -137,16 +135,15 @@ void bench(
             begin_periodic_ms = now_ms;
         }
         if (total_duration>0 && (now_ms - begin_overall_ms)/1000.0/60.0>total_duration)goto exit;
-        
+
         //sleep before loop
         if(delay>0)usleep(delay*1000);
     }
-    //persist::flush_measurement(multi_row);
 
-    
 exit:
+    flush_measurement(url);
     long elapsed_overall_ms = (get_clock_ms() - begin_overall_ms);
-    
+
     zsys_info("%d rows inserted in  %.2lf seconds, overall avg=%.2lf row/s",stat_total_row,elapsed_overall_ms/1000.0,stat_total_row/(elapsed_overall_ms/1000.0));
 }
 
@@ -164,7 +161,7 @@ void usage ()
 }
 
 /*
- * 
+ *
  */
 int main(int argc, char** argv) {
     // set default
@@ -175,7 +172,7 @@ int main(int argc, char** argv) {
     int element=100;
     int topic=100;
     int insert_every=10;
-    
+
      // get options
     int c;
     while(true) {
@@ -187,8 +184,8 @@ int main(int argc, char** argv) {
             {"periodic",   required_argument, 0,'p'},
             {"minute",     required_argument, 0,'m'},
             {"element",    required_argument, 0,'e'},
-            {"topic",      required_argument, 0,'t'}, 
-            {"insert_every",  required_argument, 0,'i'}, 
+            {"topic",      required_argument, 0,'t'},
+            {"insert_every",  required_argument, 0,'i'},
             {0, 0, 0, 0}
         };
         int option_index = 0;
@@ -226,7 +223,7 @@ int main(int argc, char** argv) {
         }
     }
     if (help) { usage(); exit(1); }
-    
+
     zsys_debug("## bench started ##");
 
     bench(delay,element, topic,  periodic, minute, insert_every);

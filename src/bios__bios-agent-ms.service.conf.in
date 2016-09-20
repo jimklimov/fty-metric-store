@@ -1,6 +1,6 @@
 # Part of Eaton $BIOS project
 # Modify the /etc/default/bios__bios-agent-ms.service.conf
-# Those values will be rewritten during OS upgrade
+# These default values under /usr will be rewritten during OS upgrade
 
 # How many days system should preserve "real time" data
 # 0 means do not save at all

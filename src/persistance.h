@@ -1,21 +1,21 @@
 /*  =========================================================================
     persistance - Some helper functions for persistance layer
 
-    Copyright (C) 2014 - 2015 Eaton                                        
-                                                                           
-    This program is free software; you can redistribute it and/or modify   
-    it under the terms of the GNU General Public License as published by   
-    the Free Software Foundation; either version 2 of the License, or      
-    (at your option) any later version.                                    
-                                                                           
-    This program is distributed in the hope that it will be useful,        
-    but WITHOUT ANY WARRANTY; without even the implied warranty of         
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
-    GNU General Public License for more details.                           
-                                                                           
+    Copyright (C) 2014 - 2015 Eaton
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.            
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     =========================================================================
 */
 
@@ -64,7 +64,8 @@ int
         int64_t start_timestamp,
         int64_t end_timestamp,
         std::function<void(
-                        const tntdb::Row&)>& cb);
+                        const tntdb::Row&)>& cb,
+        bool is_ordered);
 
 AGENT_METRIC_STORE_EXPORT
 int
@@ -85,6 +86,13 @@ AGENT_METRIC_STORE_EXPORT
 void
     persistance_test (bool verbose);
 
+AGENT_METRIC_STORE_EXPORT
+void 
+    flush_measurement_when_needed(std::string &url);
+
+AGENT_METRIC_STORE_EXPORT
+void
+    flush_measurement(std::string &url);
 //  @end
 
 #ifdef __cplusplus
