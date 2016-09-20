@@ -4,4 +4,4 @@ usr/lib/systemd/system/bios-agent-ms*.service
 usr/lib/systemd/system/biostimer-agent-ms*.service
 usr/lib/systemd/system/biostimer-agent-ms*.timer
 usr/share/bios/etc/default/bios__bios-agent-ms.service.conf
-etc/bios-agent-ms/bios-agent-ms.cfg
+etc/agent-metric-store/bios-agent-ms.cfg
