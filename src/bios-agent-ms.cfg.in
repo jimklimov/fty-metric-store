@@ -1,7 +1,20 @@
 #   bios-agent-ms configuration
-
 server
-    timeout = 10000     #   Client connection timeout, msec
-    background = 0      #   Run as background process
-    workdir = .         #   Working directory for daemon
-    verbose = 0         #   Do verbose logging of activity?
+    log_level = "LOG_WARNING"   #   ...tbd...
+    verbose = 0                 #   Do verbose logging of activity?
+store
+    rt = 0          # ...tbd...
+    15m = 1
+    30m = 1
+    1h = 7
+    8h = 7
+    24h = 30
+    7d = 180
+    30d = 730
+malamute
+    verbose = 0                                     #   1 enable verbose malamute client
+    endpoint = "ipc://@/malamute"                   #   Malamute endpoint
+    address = "agent-ms"                            #   Agent mailbox address
+    consumers
+        METRICS = .*                                #   Listen to all messages on METRICS stream, DO not change unless you know what you're doing
+        ASSETS = .*                                 #   Listen to all messages on ASSETS stream, DO not change unless you know what you're doing
