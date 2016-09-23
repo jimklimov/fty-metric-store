@@ -104,19 +104,30 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
+
+    zmsg_t *msg = *message_p;
     zmsg_t *msg_out = zmsg_new();
-    if ( zmsg_size(*message_p) < 8 ) {
-        zmsg_destroy (message_p);
+
+    // be compatible with messages with and w/o uuid.
+    // however the later is deprecated and will be removed
+    char *uuid = NULL;
+    if (zmsg_size (msg) == 9) {
+        uuid = zmsg_popstr (msg);
+        zmsg_addstr (msg_out, uuid);
+        zstr_free (&uuid);
+    }
+
+    if ( zmsg_size(msg) < 8 ) {
+        zmsg_destroy (&msg);
         zsys_error ("Message has unsupported format, ignore it");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         return msg_out;
     }
 
-    zmsg_t *msg = *message_p;
     char *cmd = zmsg_popstr (msg);
     if ( !streq(cmd, "GET") ) {
-        zmsg_destroy (message_p);
+        zmsg_destroy (&msg);
         zsys_error ("GET is misssing");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
