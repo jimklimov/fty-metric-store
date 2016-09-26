@@ -25,12 +25,14 @@
                 reply protocol for graphs
 @discuss
 
-REQ-REP:
+
+== Protocol for aggregated data
     request:
         subject: "aggregated data"
-        body: a multipart string message "GET"/A/B/C/D/E/F/L (8 frames ALWAYS)
+        body: a multipart string message uuid/"GET"/A/B/C/D/E/F/L (9 frames ALWAYS)
 
             where:
+             uuid - unique universal identifier
                 A - element name
                 B - quantity
                 C - step (15m, 24h, 7d, 30d)
@@ -40,27 +42,29 @@ REQ-REP:
                 L - 1 -> do order ; 0 -> do NOT order data. (by timestamp ascending)
 
             example:
-                "GET/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"0"
+                "8CB3E9A9649B"/"GET/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"0"
 
     reply:
         subject: "aggregated data"
-        body on success: a multipart string message "OK"/A/B/C/D/E/F/L/G/[K_i/V_i]
+        body on success: a multipart string message uuid/"OK"/A/B/C/D/E/F/L/G/[K_i/V_i]
 
             where:
+             uuid - MUST be repeated from request message
                 A - F,L have the same meaning as in "request" and must be repeated
                 G - units
                 K_i - key (UTC unix timestamp)
                 V_i - value (value)
 
             example:
-                "OK"/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"0"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
+                "8CB3E9A9649B"/"OK"/"asset_test"/"realpower.default"/"24h"/"min"/"1234567"/"1234567890"/"0"/"W"/"1234567"/"88.0"/"123456556"/"99.8"
 
 
-        body on error: a multipart string message "ERROR"/R
+        body on error: a multipart string message uuid/"ERROR"/R
 
             where:
+             uuid - MUST be repeated from request message
                 R - string describing the reason of the error
-                    "BAD_MESSAGE" when REQ does not conform to the expected message structure
+                    "BAD_MESSAGE" when REQ does not conform to the expected message structure (but still includes <uuid>)
                     "BAD_TIMERANGE" when in REQ fields  E and F do not form correct time interval
                     "INTERNAL_ERROR" when error occured during fetching the rows
                     "BAD_REQUEST" requested information is not monitored by the system
@@ -68,15 +72,10 @@ REQ-REP:
                     "BAD_ORDERED" when parameter ordered has not allowed value
 
             example:
-                "ERROR"/"BAD_MESSAGE"
+                "8CB3E9A9649B"/"ERROR"/"BAD_MESSAGE"
 
-    request:
-        subject: UNSUPPORTED_SUBJECT
-        body: any message
-
-    reply:
-        subject: UNSUPPORTED_SUBJECT
-        body: a multipart string message "ERROR"/"UNSUPPORTED_SUBJECT"
+        In case the request message does not include <uuid> or the subject is incorrect, 
+        bios_agent_ms_server SHALL NOT respond back.
 
 @end
 */
