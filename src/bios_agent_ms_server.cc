@@ -148,6 +148,8 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     std::string topic;
     std::function <void(const tntdb::Row &)> add_measurement;
     std::function <void(const tntdb::Row &)> select_units;
+    zmsg_t *msg_out_basic = NULL;
+    std::string units;
     int rv;
 
     if ( !asset_name || streq (asset_name, "") ) {
@@ -239,29 +241,14 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     topic += "@";
     topic += asset_name;
 
-
-    zmsg_addstr (msg_out, "OK");
-    zmsg_addstr (msg_out, asset_name);
-    zmsg_addstr (msg_out, quantity);
-    zmsg_addstr (msg_out, step);
-    zmsg_addstr (msg_out, aggr_type);
-    zmsg_addstr (msg_out, start_date_str);
-    zmsg_addstr (msg_out, end_date_str);
-    zmsg_addstr (msg_out, ordered);
-
-    select_units = [&msg_out](const tntdb::Row& r)
+    select_units = [&units](const tntdb::Row& r)
         {
-            std::string units;
             r["units"].get(units);
-
-            zmsg_addstr (msg_out, units.c_str());
         };
 
     rv = select_topic (url, topic, select_units);
     if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
-        zmsg_destroy (&msg_out);
-        msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
         if ( rv == -2 ) {
             zsys_error ("average request: topic is not found");
@@ -272,6 +259,18 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         }
         goto exit;
     }
+   
+    msg_out_basic = zmsg_dup (msg_out);
+     
+    zmsg_addstr (msg_out, "OK");
+    zmsg_addstr (msg_out, asset_name);
+    zmsg_addstr (msg_out, quantity);
+    zmsg_addstr (msg_out, step);
+    zmsg_addstr (msg_out, aggr_type);
+    zmsg_addstr (msg_out, start_date_str);
+    zmsg_addstr (msg_out, end_date_str);
+    zmsg_addstr (msg_out, ordered);
+    zmsg_addstr (msg_out, units.c_str());
 
     add_measurement = [&msg_out](const tntdb::Row& r)
         {
@@ -294,13 +293,13 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
         zsys_error ("unexpected error during measurement selecting");
-        zmsg_destroy (&msg_out);
-        msg_out = zmsg_new ();
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "INTERNAL_ERROR");
+        zmsg_addstr (msg_out_basic, "ERROR");
+        zmsg_addstr (msg_out_basic, "INTERNAL_ERROR");
     }
 
 exit:
+    zmsg_destroy (&msg_out_basic);
+    zmsg_destroy (&msg_out);
     zstr_free (&ordered);
     zstr_free (&end_date_str);
     zstr_free (&start_date_str);
