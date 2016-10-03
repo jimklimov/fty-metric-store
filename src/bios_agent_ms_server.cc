@@ -107,14 +107,10 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     zmsg_t *msg = *message_p;
     zmsg_t *msg_out = zmsg_new();
 
-    // be compatible with messages with and w/o uuid.
-    // however the later is deprecated and will be removed
     char *uuid = NULL;
-    if (zmsg_size (msg) == 9) {
-        uuid = zmsg_popstr (msg);
-        zmsg_addstr (msg_out, uuid);
-        zstr_free (&uuid);
-    }
+    uuid = zmsg_popstr (msg);
+    zmsg_addstr (msg_out, uuid);
+    zstr_free (&uuid);
 
     if ( zmsg_size(msg) < 8 ) {
         zmsg_destroy (&msg);
