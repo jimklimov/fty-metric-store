@@ -99,18 +99,13 @@ static std::string url =
 
 // destroys the message
 static zmsg_t*
-s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
+s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
 {
     assert (client);
+    assert (msg_out && zmsg_is (msg_out));
     assert (message_p && *message_p);
 
     zmsg_t *msg = *message_p;
-    zmsg_t *msg_out = zmsg_new();
-
-    char *uuid = NULL;
-    uuid = zmsg_popstr (msg);
-    zmsg_addstr (msg_out, uuid);
-    zstr_free (&uuid);
 
     if ( zmsg_size(msg) < 8 ) {
         zmsg_destroy (&msg);
@@ -144,7 +139,6 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     std::string topic;
     std::function <void(const tntdb::Row &)> add_measurement;
     std::function <void(const tntdb::Row &)> select_units;
-    zmsg_t *msg_out_basic = NULL;
     std::string units;
     int rv;
 
@@ -255,9 +249,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         }
         goto exit;
     }
-   
-    msg_out_basic = zmsg_dup (msg_out);
-     
+ 
     zmsg_addstr (msg_out, "OK");
     zmsg_addstr (msg_out, asset_name);
     zmsg_addstr (msg_out, quantity);
@@ -288,14 +280,22 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     rv = select_measurements (url, topic, start_date, end_date, add_measurement, is_ordered);
     if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
+
+        // clean all frames from msg_out except first one
+        zmsg_first (msg_out);
+        for (zframe_t *frame = zmsg_next (msg_out);
+                       frame != NULL;
+                       frame = zmsg_next (msg_out))
+        {
+            zframe_destroy (&frame);
+        }
+
         zsys_error ("unexpected error during measurement selecting");
-        zmsg_addstr (msg_out_basic, "ERROR");
-        zmsg_addstr (msg_out_basic, "INTERNAL_ERROR");
+        zmsg_addstr (msg_out, "ERROR");
+        zmsg_addstr (msg_out, "INTERNAL_ERROR");
     }
 
 exit:
-    zmsg_destroy (&msg_out_basic);
-    zmsg_destroy (&msg_out);
     zstr_free (&ordered);
     zstr_free (&end_date_str);
     zstr_free (&start_date_str);
@@ -323,13 +323,25 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
-    zmsg_t *msg_out = NULL;
+
+    zmsg_t *msg = *message_p;
+
+    if (zmsg_size (msg) == 0) {
+        zsys_info ("Empty message with subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
+        zmsg_destroy (&msg);
+    }
+
+    zmsg_t *msg_out = zmsg_new ();
+    char *uuid = zmsg_popstr (msg);
+    zmsg_addstr (msg_out, uuid);
+    zstr_free (&uuid);
+
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
-        msg_out = s_handle_aggregate (client, message_p);
+        msg_out = s_handle_aggregate (client, msg_out, &msg);
+        zmsg_print (msg_out);
     } else {
-        zsys_error ("Unsupported subject '%s'",  mlm_client_subject (client));
-        zmsg_destroy (message_p);
-        msg_out = zmsg_new();
+        zsys_info ("Bad subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
+        zmsg_destroy (&msg);
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "UNSUPPORTED_SUBJECT");
     }
@@ -504,7 +516,10 @@ bios_agent_ms_server (zsock_t *pipe, void* args)
             zsys_error ("Unrecognized mlm_client_command () = '%s'", command ? command : "(null)");
         }
 
-        zmsg_destroy (&message);
+        // XXX: normally code fails on zmsg_is assert called from zmsg_destroy
+        //      do the check manually to not crash the server
+        if (message && zmsg_is (message))
+            zmsg_destroy (&message);
     } // while (!zsys_interrupted)
     flush_measurement(url);
 
