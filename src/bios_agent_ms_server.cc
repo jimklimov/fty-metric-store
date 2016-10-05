@@ -338,7 +338,6 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
         msg_out = s_handle_aggregate (client, msg_out, &msg);
-        zmsg_print (msg_out);
     } else {
         zsys_info ("Bad subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
         zmsg_destroy (&msg);
