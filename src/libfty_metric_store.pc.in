@@ -12,7 +12,7 @@ Name: libfty_metric_store
 Description: Persistance for metrics
 Version: @VERSION@
 
-Requires:libzmq libmlm >= 1.0.0 libczmq tntdb cxxtools libfty_proto >= 1.0.0
+Requires:libzmq libmlm libczmq tntdb cxxtools libfty_proto >= 1.0.0
 
 Libs: -L${libdir} -lfty_metric_store
 Cflags: -I${includedir} @pkg_config_defines@
