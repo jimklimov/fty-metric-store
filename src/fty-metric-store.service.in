@@ -1,5 +1,5 @@
 [Unit]
-Description=BIOS metric persistance
+Description=42Ity persistance for metrics
 Requires=malamute.service bios-db-init.service
 After=malamute.service bios-db-init.service
 PartOf=bios.target
@@ -9,11 +9,11 @@ Type=simple
 User=bios
 Environment="prefix=@prefix@"
 EnvironmentFile=-/usr/share/bios/etc/default/bios
-EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
+EnvironmentFile=-/usr/share/bios/etc/default/fty__%n.conf
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/default/fty__%n.conf
 EnvironmentFile=-/etc/default/bios-db-rw
-ExecStart=@prefix@/bin/bios-agent-ms
+ExecStart=@prefix@/bin/fty-metric-store @sysconfdir@/@PACKAGE@/fty-metric-store.cfg
 Restart=always
 
 [Install]

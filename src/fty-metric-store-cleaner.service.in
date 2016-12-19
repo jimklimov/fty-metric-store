@@ -1,5 +1,5 @@
 [Unit]
-Description=BIOS metric persistance cleaner
+Description=42Ity metric persistance cleaner
 Requires=bios-db-init.service
 After=bios-db-init.service
 PartOf=bios.target
@@ -9,11 +9,11 @@ Type=simple
 User=bios
 Environment="prefix=@prefix@"
 EnvironmentFile=-/usr/share/bios/etc/default/bios
-EnvironmentFile=-/usr/share/bios/etc/default/bios__bios-agent-ms.service.conf
+EnvironmentFile=-/usr/share/bios/etc/default/fty__fty-metric-store.service.conf
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/default/bios__bios-agent-ms.service.conf
+EnvironmentFile=-/etc/default/fty__fty-metric-store.service.conf
 EnvironmentFile=-/etc/default/bios-db-rw
-ExecStart=@prefix@/bin/biostimer-agent-ms-cleaner
+ExecStart=@prefix@/bin/fty-metric-store-cleaner
 
 [Install]
 WantedBy=bios.target

@@ -26,8 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <list>
 #include <string>
 
-#include "../include/agent_metric_store.h"
-#include "persistance.h"
+#include "fty_metric_store_classes.h"
 
 #define MAX_ROW_DEFAULT   1000
 #define MAX_DELAY_DEFAULT 1

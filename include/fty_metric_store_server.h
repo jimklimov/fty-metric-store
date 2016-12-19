@@ -1,5 +1,5 @@
 /*  =========================================================================
-    agent-metric-store - Persistance layer for metrics
+    fty_metric_store_server - Metric store actor
 
     Copyright (C) 2014 - 2015 Eaton
 
@@ -19,12 +19,25 @@
     =========================================================================
 */
 
-#ifndef AGENT_METRIC_STORE_H_H_INCLUDED
-#define AGENT_METRIC_STORE_H_H_INCLUDED
+#ifndef FTY_METRIC_STORE_SERVER_H_INCLUDED
+#define FTY_METRIC_STORE_SERVER_H_INCLUDED
 
-//  Include the project library file
-#include "agent_metric_store_library.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-//  Add your own public definitions here, if you need them
+//  Metric store actor
+FTY_METRIC_STORE_EXPORT void
+    fty_metric_store_server (zsock_t *pipe, void* args);
+
+//  Self test of this class
+FTY_METRIC_STORE_EXPORT void
+    fty_metric_store_server_test (bool verbose);
+
+//  @end
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -25,7 +25,7 @@
  */
 #include <getopt.h>
 #include <ctime>
-#include "agent_metric_store_classes.h"
+#include "fty_metric_store_classes.h"
 
 using namespace std;
 
