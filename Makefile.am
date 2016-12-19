@@ -17,15 +17,15 @@ AM_CXXFLAGS = \
 
 AM_CPPFLAGS = \
     ${libzmq_CFLAGS} \
-    ${malamute_CFLAGS} \
     ${czmq_CFLAGS} \
+    ${malamute_CFLAGS} \
     ${tntdb_CFLAGS} \
     ${cxxtools_CFLAGS} \
     ${fty_proto_CFLAGS} \
     -D__STDC_FORMAT_MACROS \
     -I$(srcdir)/include
 
-project_libs = ${libzmq_LIBS} ${malamute_LIBS} ${czmq_LIBS} ${tntdb_LIBS} ${cxxtools_LIBS} ${fty_proto_LIBS}
+project_libs = ${libzmq_LIBS} ${czmq_LIBS} ${malamute_LIBS} ${tntdb_LIBS} ${cxxtools_LIBS} ${fty_proto_LIBS}
 
 SUBDIRS = doc
 DIST_SUBDIRS = doc
@@ -39,8 +39,8 @@ TESTS =
 EXTRA_DIST = \
     CMakeLists.txt \
     Findlibzmq.cmake \
-    Findmalamute.cmake \
     Findczmq.cmake \
+    Findmalamute.cmake \
     Findtntdb.cmake \
     Findcxxtools.cmake \
     Findfty_proto.cmake \

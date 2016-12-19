@@ -3,8 +3,8 @@ set -ex
 
 cd $REPO_DIR/..
 git clone --quiet --depth 1 https://github.com/zeromq/libzmq.git libzmq.git
-git clone --quiet --depth 1 https://github.com/zeromq/malamute.git malamute.git
 git clone --quiet --depth 1 https://github.com/zeromq/czmq.git czmq.git
+git clone --quiet --depth 1 https://github.com/zeromq/malamute.git malamute.git
 git clone --quiet --depth 1 https://github.com/maekitalo/tntdb tntdb.git
 git clone --quiet --depth 1 https://github.com/42ity/cxxtools cxxtools.git
 git clone --quiet --depth 1 https://github.com/42ity/fty-proto fty-proto.git

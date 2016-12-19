@@ -51,8 +51,8 @@ BuildRequires:  systemd
 BuildRequires:  xmlto
 BuildRequires:  gcc-c++
 BuildRequires:  zeromq-devel
-BuildRequires:  malamute-devel
 BuildRequires:  czmq-devel
+BuildRequires:  malamute-devel
 BuildRequires:  tntdb-devel
 BuildRequires:  cxxtools-devel
 BuildRequires:  fty-proto-devel
@@ -81,8 +81,8 @@ Summary:        persistance for metrics
 Group:          System/Libraries
 Requires:       libfty_metric_store1 = %{version}
 Requires:       zeromq-devel
-Requires:       malamute-devel
 Requires:       czmq-devel
+Requires:       malamute-devel
 Requires:       tntdb-devel
 Requires:       cxxtools-devel
 Requires:       fty-proto-devel

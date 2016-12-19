@@ -124,53 +124,6 @@ if test "x$was_libzmq_check_lib_detected" = "xno"; then
     LIBS="${libzmq_LIBS} ${LIBS}"
 fi
 
-was_malamute_check_lib_detected=no
-
-PKG_CHECK_MODULES([malamute], [libmlm >= 0.0.0],
-    [
-        PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE $malamute_LIBS"
-    ],
-    [
-        AC_ARG_WITH([libmlm],
-            [
-                AS_HELP_STRING([--with-libmlm],
-                [Specify libmlm prefix])
-            ],
-            [search_libmlm="yes"],
-            [])
-
-        malamute_synthetic_cflags=""
-        malamute_synthetic_libs="-lmlm"
-
-        if test "x$search_libmlm" = "xyes"; then
-            if test -r "${with_libmlm}/include/malamute.h"; then
-                malamute_synthetic_cflags="-I${with_libmlm}/include"
-                malamute_synthetic_libs="-L${with_libmlm}/lib -lmlm"
-            else
-                AC_MSG_ERROR([${with_libmlm}/include/malamute.h not found. Please check libmlm prefix])
-            fi
-        fi
-
-
-        AC_CHECK_LIB([mlm], [mlm_server_test],
-            [
-                CFLAGS="${malamute_synthetic_cflags} ${CFLAGS}"
-                LDFLAGS="${malamute_synthetic_libs} ${LDFLAGS}"
-                LIBS="${malamute_synthetic_libs} ${LIBS}"
-
-                AC_SUBST([malamute_CFLAGS],[${malamute_synthetic_cflags}])
-                AC_SUBST([malamute_LIBS],[${malamute_synthetic_libs}])
-                was_malamute_check_lib_detected=yes
-                PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE -lmlm"
-            ],
-            [AC_MSG_ERROR([cannot link with -lmlm, install libmlm])])
-    ])
-
-if test "x$was_malamute_check_lib_detected" = "xno"; then
-    CFLAGS="${malamute_CFLAGS} ${CFLAGS}"
-    LIBS="${malamute_LIBS} ${LIBS}"
-fi
-
 was_czmq_check_lib_detected=no
 
 PKG_CHECK_MODULES([czmq], [libczmq >= 0.0.0],
@@ -216,6 +169,53 @@ PKG_CHECK_MODULES([czmq], [libczmq >= 0.0.0],
 if test "x$was_czmq_check_lib_detected" = "xno"; then
     CFLAGS="${czmq_CFLAGS} ${CFLAGS}"
     LIBS="${czmq_LIBS} ${LIBS}"
+fi
+
+was_malamute_check_lib_detected=no
+
+PKG_CHECK_MODULES([malamute], [libmlm >= 0.0.0],
+    [
+        PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE $malamute_LIBS"
+    ],
+    [
+        AC_ARG_WITH([libmlm],
+            [
+                AS_HELP_STRING([--with-libmlm],
+                [Specify libmlm prefix])
+            ],
+            [search_libmlm="yes"],
+            [])
+
+        malamute_synthetic_cflags=""
+        malamute_synthetic_libs="-lmlm"
+
+        if test "x$search_libmlm" = "xyes"; then
+            if test -r "${with_libmlm}/include/malamute.h"; then
+                malamute_synthetic_cflags="-I${with_libmlm}/include"
+                malamute_synthetic_libs="-L${with_libmlm}/lib -lmlm"
+            else
+                AC_MSG_ERROR([${with_libmlm}/include/malamute.h not found. Please check libmlm prefix])
+            fi
+        fi
+
+
+        AC_CHECK_LIB([mlm], [mlm_server_test],
+            [
+                CFLAGS="${malamute_synthetic_cflags} ${CFLAGS}"
+                LDFLAGS="${malamute_synthetic_libs} ${LDFLAGS}"
+                LIBS="${malamute_synthetic_libs} ${LIBS}"
+
+                AC_SUBST([malamute_CFLAGS],[${malamute_synthetic_cflags}])
+                AC_SUBST([malamute_LIBS],[${malamute_synthetic_libs}])
+                was_malamute_check_lib_detected=yes
+                PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE -lmlm"
+            ],
+            [AC_MSG_ERROR([cannot link with -lmlm, install libmlm])])
+    ])
+
+if test "x$was_malamute_check_lib_detected" = "xno"; then
+    CFLAGS="${malamute_CFLAGS} ${CFLAGS}"
+    LIBS="${malamute_LIBS} ${LIBS}"
 fi
 
 was_tntdb_check_lib_detected=no

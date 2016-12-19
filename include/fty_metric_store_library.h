@@ -30,8 +30,8 @@
 //  Set up environment for the application
 
 //  External dependencies
-#include <malamute.h>
 #include <czmq.h>
+#include <malamute.h>
 #include <tntdb/connect.h>
 #include <cxxtools/allocator.h>
 #include <ftyproto.h>
