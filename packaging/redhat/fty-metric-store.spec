@@ -32,7 +32,7 @@ Name:           fty-metric-store
 Version:        1.0.0
 Release:        1
 Summary:        persistance for metrics
-License:        MIT
+License:        GPL-2.0+
 URL:            http://example.com/
 Source0:        %{name}-%{version}.tar.gz
 Group:          System/Libraries

@@ -141,12 +141,44 @@ fi
 
 was_czmq_check_lib_detected=no
 
-PKG_CHECK_MODULES([czmq], [libczmq >= 3.0.0],
+PKG_CHECK_MODULES([czmq], [libczmq >= 0.0.0],
     [
         PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE $czmq_LIBS"
     ],
     [
-        AC_MSG_ERROR([Cannot find libczmq 3.0.0 or higher])
+        AC_ARG_WITH([libczmq],
+            [
+                AS_HELP_STRING([--with-libczmq],
+                [Specify libczmq prefix])
+            ],
+            [search_libczmq="yes"],
+            [])
+
+        czmq_synthetic_cflags=""
+        czmq_synthetic_libs="-lczmq"
+
+        if test "x$search_libczmq" = "xyes"; then
+            if test -r "${with_libczmq}/include/czmq.h"; then
+                czmq_synthetic_cflags="-I${with_libczmq}/include"
+                czmq_synthetic_libs="-L${with_libczmq}/lib -lczmq"
+            else
+                AC_MSG_ERROR([${with_libczmq}/include/czmq.h not found. Please check libczmq prefix])
+            fi
+        fi
+
+
+        AC_CHECK_LIB([czmq], [zmsg_test],
+            [
+                CFLAGS="${czmq_synthetic_cflags} ${CFLAGS}"
+                LDFLAGS="${czmq_synthetic_libs} ${LDFLAGS}"
+                LIBS="${czmq_synthetic_libs} ${LIBS}"
+
+                AC_SUBST([czmq_CFLAGS],[${czmq_synthetic_cflags}])
+                AC_SUBST([czmq_LIBS],[${czmq_synthetic_libs}])
+                was_czmq_check_lib_detected=yes
+                PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE -lczmq"
+            ],
+            [AC_MSG_ERROR([cannot link with -lczmq, install libczmq])])
     ])
 
 if test "x$was_czmq_check_lib_detected" = "xno"; then
@@ -156,12 +188,44 @@ fi
 
 was_tntdb_check_lib_detected=no
 
-PKG_CHECK_MODULES([tntdb], [tntdb >= 1.0.0],
+PKG_CHECK_MODULES([tntdb], [tntdb >= 0.0.0],
     [
         PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE $tntdb_LIBS"
     ],
     [
-        AC_MSG_ERROR([Cannot find tntdb 1.0.0 or higher])
+        AC_ARG_WITH([tntdb],
+            [
+                AS_HELP_STRING([--with-tntdb],
+                [Specify tntdb prefix])
+            ],
+            [search_tntdb="yes"],
+            [])
+
+        tntdb_synthetic_cflags=""
+        tntdb_synthetic_libs="-ltntdb"
+
+        if test "x$search_tntdb" = "xyes"; then
+            if test -r "${with_tntdb}/include/tntdb/connect.h"; then
+                tntdb_synthetic_cflags="-I${with_tntdb}/include"
+                tntdb_synthetic_libs="-L${with_tntdb}/lib -ltntdb"
+            else
+                AC_MSG_ERROR([${with_tntdb}/include/tntdb/connect.h not found. Please check tntdb prefix])
+            fi
+        fi
+
+
+        AC_CHECK_LIB([tntdb], [tntdb::connectCached],
+            [
+                CFLAGS="${tntdb_synthetic_cflags} ${CFLAGS}"
+                LDFLAGS="${tntdb_synthetic_libs} ${LDFLAGS}"
+                LIBS="${tntdb_synthetic_libs} ${LIBS}"
+
+                AC_SUBST([tntdb_CFLAGS],[${tntdb_synthetic_cflags}])
+                AC_SUBST([tntdb_LIBS],[${tntdb_synthetic_libs}])
+                was_tntdb_check_lib_detected=yes
+                PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE -ltntdb"
+            ],
+            [AC_MSG_ERROR([cannot link with -ltntdb, install tntdb])])
     ])
 
 if test "x$was_tntdb_check_lib_detected" = "xno"; then
@@ -171,12 +235,44 @@ fi
 
 was_cxxtools_check_lib_detected=no
 
-PKG_CHECK_MODULES([cxxtools], [cxxtools >= 2.0.0],
+PKG_CHECK_MODULES([cxxtools], [cxxtools >= 0.0.0],
     [
         PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE $cxxtools_LIBS"
     ],
     [
-        AC_MSG_ERROR([Cannot find cxxtools 2.0.0 or higher])
+        AC_ARG_WITH([cxxtools],
+            [
+                AS_HELP_STRING([--with-cxxtools],
+                [Specify cxxtools prefix])
+            ],
+            [search_cxxtools="yes"],
+            [])
+
+        cxxtools_synthetic_cflags=""
+        cxxtools_synthetic_libs="-lcxxtools"
+
+        if test "x$search_cxxtools" = "xyes"; then
+            if test -r "${with_cxxtools}/include/cxxtools/allocator.h"; then
+                cxxtools_synthetic_cflags="-I${with_cxxtools}/include"
+                cxxtools_synthetic_libs="-L${with_cxxtools}/lib -lcxxtools"
+            else
+                AC_MSG_ERROR([${with_cxxtools}/include/cxxtools/allocator.h not found. Please check cxxtools prefix])
+            fi
+        fi
+
+
+        AC_CHECK_LIB([cxxtools], [cxxtools::Utf8Codec::Utf8Codec],
+            [
+                CFLAGS="${cxxtools_synthetic_cflags} ${CFLAGS}"
+                LDFLAGS="${cxxtools_synthetic_libs} ${LDFLAGS}"
+                LIBS="${cxxtools_synthetic_libs} ${LIBS}"
+
+                AC_SUBST([cxxtools_CFLAGS],[${cxxtools_synthetic_cflags}])
+                AC_SUBST([cxxtools_LIBS],[${cxxtools_synthetic_libs}])
+                was_cxxtools_check_lib_detected=yes
+                PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE -lcxxtools"
+            ],
+            [AC_MSG_ERROR([cannot link with -lcxxtools, install cxxtools])])
     ])
 
 if test "x$was_cxxtools_check_lib_detected" = "xno"; then
