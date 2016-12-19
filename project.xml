@@ -3,6 +3,7 @@
     description = "Persistance for metrics"
     script = "zproject.gsl"
     email = "EatonIPCOpenSource@eaton.com"
+    license = "GPL-2.0+"
     repository = "https://github.com/42ity/fty-metric-store"
     >
 
@@ -13,10 +14,20 @@
     <include filename = "license.xml" />
     <version major = "1" minor = "0" patch = "0" />
 
-    <use project = "malamute"  min_major = "1" test = "mlm_server_test" />
-    <use project = "czmq"      min_major = "3" test = "zmsg_test" />
-    <use project = "tntdb"     min_major = "1" test = "tntdb::Utf8Codec::Utf8Codec" />
-     <use project = "cxxtools" min_major = "2" test = "cxxtools::Utf8Codec::Utf8Codec" />
+    <use project = "malamute"  min_major = "1"      test = "mlm_server_test" />
+    <use project = "czmq"      release = "v3.0.2"   test = "zmsg_test" />
+
+    <use project = "tntdb"
+        release = "1.3"
+        repository = "https://github.com/maekitalo/tntdb" 
+        />
+
+    <use project = "cxxtools"
+        header = "cxxtools/allocator.h"
+        repository = "https://github.com/42ity/cxxtools" 
+        release = "42ity"
+        test = "cxxtools::Utf8Codec::Utf8Codec"
+        />
 
     <use project = "fty-proto" libname = "libfty_proto" prefix="fty_proto"
         min_major = "1" min_minor = "0" min_patch = "0"
