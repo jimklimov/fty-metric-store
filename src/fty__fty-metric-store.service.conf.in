@@ -1,5 +1,5 @@
-# Part of Eaton $BIOS project
-# Modify the /etc/default/bios__bios-agent-ms.service.conf
+# Part of Eaton 42Ity project
+# Modify the /etc/default/fty__fty-metric-store.service.conf
 # These default values under /usr will be rewritten during OS upgrade
 
 # How many days system should preserve "real time" data

@@ -1,5 +1,5 @@
 [Unit]
-Description=Timer to call biostimer-agent-ms-cleaner.service
+Description=Timer to call fty-metric-store-cleaner.service
 PartOf=bios.target
 
 [Timer]

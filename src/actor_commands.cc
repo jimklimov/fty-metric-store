@@ -26,7 +26,7 @@
 @end
 */
 
-#include "agent_metric_store_classes.h"
+#include "fty_metric_store_classes.h"
 int
 actor_commands (
         mlm_client_t *client,

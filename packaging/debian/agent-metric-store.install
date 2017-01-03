@@ -1,7 +1,0 @@
-usr/bin/bios-agent-ms
-usr/bin/biostimer-agent-ms-cleaner
-usr/lib/systemd/system/bios-agent-ms*.service
-usr/lib/systemd/system/biostimer-agent-ms*.service
-usr/lib/systemd/system/biostimer-agent-ms*.timer
-usr/share/bios/etc/default/bios__bios-agent-ms.service.conf
-etc/agent-metric-store/bios-agent-ms.cfg

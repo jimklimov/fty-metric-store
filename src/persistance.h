@@ -44,8 +44,7 @@ typedef uint16_t  m_msrmnt_tpc_id_t;
 // ----- column: id_discovered_device -----------------
 typedef uint16_t m_dvc_id_t;
 
-
-AGENT_METRIC_STORE_EXPORT
+FTY_METRIC_STORE_EXPORT
 int
     insert_into_measurement(
         tntdb::Connection &conn,
@@ -56,7 +55,7 @@ int
         const char        *units,
         const char        *device_name);
 
-AGENT_METRIC_STORE_EXPORT
+FTY_METRIC_STORE_EXPORT
 int
     select_measurements (
         const std::string &connurl,
@@ -67,7 +66,7 @@ int
                         const tntdb::Row&)>& cb,
         bool is_ordered);
 
-AGENT_METRIC_STORE_EXPORT
+FTY_METRIC_STORE_EXPORT
 int
     select_topic (
         const std::string &connurl,
@@ -75,22 +74,22 @@ int
         std::function<void(
                         const tntdb::Row&)>& cb);
 
-AGENT_METRIC_STORE_EXPORT
+FTY_METRIC_STORE_EXPORT
 int
     delete_measurements(
         tntdb::Connection &conn,
         const char        *asset_name);
 
 //  Self test of this class
-AGENT_METRIC_STORE_EXPORT
+FTY_METRIC_STORE_EXPORT
 void
     persistance_test (bool verbose);
 
-AGENT_METRIC_STORE_EXPORT
+FTY_METRIC_STORE_EXPORT
 void 
     flush_measurement_when_needed(std::string &url);
 
-AGENT_METRIC_STORE_EXPORT
+FTY_METRIC_STORE_EXPORT
 void
     flush_measurement(std::string &url);
 //  @end

@@ -26,8 +26,7 @@
 @end
 */
 
-#include "agent_metric_store_classes.h"
-#include "multi_row.h"
+#include "fty_metric_store_classes.h"
 
 MultiRowCache _row_cache;
 

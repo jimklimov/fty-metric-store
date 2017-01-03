@@ -49,13 +49,13 @@ extern "C" {
 // Performs the actor commands logic
 // Destroys the message
 // Returns 1 for $TERM (means exit), 0 otherwise
-AGENT_METRIC_STORE_EXPORT int
+FTY_METRIC_STORE_EXPORT int
     actor_commands (
             mlm_client_t *client,
             zmsg_t **message_p);
 
 //  Self test of this class
-AGENT_METRIC_STORE_EXPORT void
+FTY_METRIC_STORE_EXPORT void
     actor_commands_test (bool verbose);
 
 //  @end

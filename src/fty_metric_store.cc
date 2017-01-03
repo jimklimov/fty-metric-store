@@ -1,5 +1,5 @@
 /*  =========================================================================
-    bios_agent_ms - Persistance layer for metrics.
+    fty_metric_store - Metric store agent
 
     Copyright (C) 2014 - 2015 Eaton
 
@@ -21,18 +21,18 @@
 
 /*
 @header
-    bios_agent_ms - Persistance layer for metrics.
+    fty_metric_store - Metric store agent
 @discuss
 @end
 */
 
-#include "agent_metric_store_classes.h"
+#include "fty_metric_store_classes.h"
 
 #include <getopt.h>
 
-static const char *AGENT_NAME = "agent-ms";
+static const char *AGENT_NAME = "fty-metric-store";
 static const char *ENDPOINT = "ipc://@/malamute";
-static const char *CONF_PREFIX = "BIOS_METRIC_STORE_AGE";
+static const char *CONF_PREFIX = "FTY_METRIC_STORE_AGE";
 #define STEPS_SIZE 8
 static const char *STEPS[STEPS_SIZE] = {"RT", "15m", "30m", "1h", "8h", "1d", "7d", "30d"};
 static const char *DEFAULTS[STEPS_SIZE] = {"0", "1", "1",   "7",  "7",  "30", "30", "180"};
@@ -42,9 +42,9 @@ static const char *DEFAULTS[STEPS_SIZE] = {"0", "1", "1",   "7",  "7",  "30", "3
 #define DEFAULT_LOG_LEVEL LOG_WARNING
 
 void usage () {
-    puts ("bios-agent-ws [options] ...\n"
+    puts ("fty-metric-store [options] ...\n"
           "  --log-level / -l       bios log level\n"
-          "                         overrides setting in env. variable BIOS_LOG_LEVEL\n"
+          "                         overrides setting in env. variable FTY_LOG_LEVEL\n"
           "  --config-file / -c     TODO\n"
           "  --help / -h            this information\n"
           );
@@ -122,7 +122,7 @@ int main (int argc, char *argv [])
     //  3. command line argument
     //  4. actor message - NOT IMPLEMENTED YET
     if (log_level == -1) {
-        char *env_log_level = getenv ("BIOS_LOG_LEVEL");
+        char *env_log_level = getenv ("FTY_LOG_LEVEL");
         if (env_log_level) {
             log_level = get_log_level (env_log_level);
             if (log_level == -1)
@@ -134,14 +134,14 @@ int main (int argc, char *argv [])
     }
     log_set_level (log_level);
 
-    zactor_t *ms_server = zactor_new (bios_agent_ms_server, (void *) NULL);
+    zactor_t *ms_server = zactor_new (fty_metric_store_server, (void *) NULL);
     if (!ms_server) {
-        log_critical ("zactor_new (task = 'bios_agent_ms_server', args = 'NULL') failed");
+        log_critical ("zactor_new (task = 'fty_metric_store_server', args = 'NULL') failed");
         return EXIT_FAILURE;
     }
     zstr_sendx (ms_server, "CONNECT", ENDPOINT, AGENT_NAME, NULL);
-    zstr_sendx (ms_server, "CONSUMER", BIOS_PROTO_STREAM_METRICS, ".*", NULL);
-    zstr_sendx (ms_server, "CONSUMER", BIOS_PROTO_STREAM_ASSETS, ".*", NULL);
+    zstr_sendx (ms_server, "CONSUMER", FTY_PROTO_STREAM_METRICS, ".*", NULL);
+    zstr_sendx (ms_server, "CONSUMER", FTY_PROTO_STREAM_ASSETS, ".*", NULL);
 
     // setup the storage age
     for (int i = 0; i != STEPS_SIZE; i++) {

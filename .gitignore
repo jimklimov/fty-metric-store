@@ -54,13 +54,16 @@ src/stamp-h1
 src/test-suite.log
 src/.dirstamp
 
-# CMake cache
+# CMake
 CMakeCache.txt
 CMakeFiles/
 CTestTestfile.cmake
 cmake_install.cmake
 install_manifest.txt
 Testing/
+CMakeLists.txt
+*.cmake
+builds/cmake
 
 # GYP files
 project.Makefile

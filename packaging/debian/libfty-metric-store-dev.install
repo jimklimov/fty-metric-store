@@ -1,0 +1,4 @@
+usr/include/*
+usr/lib/*/libfty_metric_store.so
+usr/lib/*/pkgconfig/libfty_metric_store.pc
+usr/share/man/man3/*
