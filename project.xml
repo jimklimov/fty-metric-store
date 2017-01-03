@@ -27,7 +27,6 @@
     <use project = "tntdb"
         release = "1.3"
         repository = "https://github.com/42ity/tntdb"
-        header="tntdb/connect.h"
         builddir = "tntdb"
         test="tntdb::connectCached"  
         />

@@ -284,11 +284,11 @@ PKG_CHECK_MODULES([tntdb], [tntdb >= 0.0.0],
         tntdb_synthetic_libs="-ltntdb"
 
         if test "x$search_tntdb" = "xyes"; then
-            if test -r "${with_tntdb}/include/tntdb/connect.h"; then
+            if test -r "${with_tntdb}/include/tntdb.h"; then
                 tntdb_synthetic_cflags="-I${with_tntdb}/include"
                 tntdb_synthetic_libs="-L${with_tntdb}/lib -ltntdb"
             else
-                AC_MSG_ERROR([${with_tntdb}/include/tntdb/connect.h not found. Please check tntdb prefix])
+                AC_MSG_ERROR([${with_tntdb}/include/tntdb.h not found. Please check tntdb prefix])
             fi
         fi
 
