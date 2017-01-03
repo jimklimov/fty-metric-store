@@ -31,12 +31,12 @@ AC_SUBST(PACKAGE_VERSION)
 #
 # Libtool -version-info (ABI version)
 #
-# Currently 2.0.1 ("stable"). Don't change this unless you
+# Currently 0:0:0 ("stable"). Don't change this unless you
 # know exactly what you're doing and have read and understand
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 #
 # libfty_metric_store -version-info
-LTVER="1:0:0"
+LTVER="0:0:0"
 AC_SUBST(LTVER)
 
 # Capture c flags
@@ -218,53 +218,6 @@ if test "x$was_malamute_check_lib_detected" = "xno"; then
     LIBS="${malamute_LIBS} ${LIBS}"
 fi
 
-was_tntdb_check_lib_detected=no
-
-PKG_CHECK_MODULES([tntdb], [tntdb >= 0.0.0],
-    [
-        PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE $tntdb_LIBS"
-    ],
-    [
-        AC_ARG_WITH([tntdb],
-            [
-                AS_HELP_STRING([--with-tntdb],
-                [Specify tntdb prefix])
-            ],
-            [search_tntdb="yes"],
-            [])
-
-        tntdb_synthetic_cflags=""
-        tntdb_synthetic_libs="-ltntdb"
-
-        if test "x$search_tntdb" = "xyes"; then
-            if test -r "${with_tntdb}/include/tntdb/connect.h"; then
-                tntdb_synthetic_cflags="-I${with_tntdb}/include"
-                tntdb_synthetic_libs="-L${with_tntdb}/lib -ltntdb"
-            else
-                AC_MSG_ERROR([${with_tntdb}/include/tntdb/connect.h not found. Please check tntdb prefix])
-            fi
-        fi
-
-
-        AC_CHECK_LIB([tntdb], [tntdb::connectCached],
-            [
-                CFLAGS="${tntdb_synthetic_cflags} ${CFLAGS}"
-                LDFLAGS="${tntdb_synthetic_libs} ${LDFLAGS}"
-                LIBS="${tntdb_synthetic_libs} ${LIBS}"
-
-                AC_SUBST([tntdb_CFLAGS],[${tntdb_synthetic_cflags}])
-                AC_SUBST([tntdb_LIBS],[${tntdb_synthetic_libs}])
-                was_tntdb_check_lib_detected=yes
-                PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE -ltntdb"
-            ],
-            [AC_MSG_ERROR([cannot link with -ltntdb, install tntdb])])
-    ])
-
-if test "x$was_tntdb_check_lib_detected" = "xno"; then
-    CFLAGS="${tntdb_CFLAGS} ${CFLAGS}"
-    LIBS="${tntdb_LIBS} ${LIBS}"
-fi
-
 was_cxxtools_check_lib_detected=no
 
 PKG_CHECK_MODULES([cxxtools], [cxxtools >= 0.0.0],
@@ -310,6 +263,53 @@ PKG_CHECK_MODULES([cxxtools], [cxxtools >= 0.0.0],
 if test "x$was_cxxtools_check_lib_detected" = "xno"; then
     CFLAGS="${cxxtools_CFLAGS} ${CFLAGS}"
     LIBS="${cxxtools_LIBS} ${LIBS}"
+fi
+
+was_tntdb_check_lib_detected=no
+
+PKG_CHECK_MODULES([tntdb], [tntdb >= 0.0.0],
+    [
+        PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE $tntdb_LIBS"
+    ],
+    [
+        AC_ARG_WITH([tntdb],
+            [
+                AS_HELP_STRING([--with-tntdb],
+                [Specify tntdb prefix])
+            ],
+            [search_tntdb="yes"],
+            [])
+
+        tntdb_synthetic_cflags=""
+        tntdb_synthetic_libs="-ltntdb"
+
+        if test "x$search_tntdb" = "xyes"; then
+            if test -r "${with_tntdb}/include/tntdb/connect.h"; then
+                tntdb_synthetic_cflags="-I${with_tntdb}/include"
+                tntdb_synthetic_libs="-L${with_tntdb}/lib -ltntdb"
+            else
+                AC_MSG_ERROR([${with_tntdb}/include/tntdb/connect.h not found. Please check tntdb prefix])
+            fi
+        fi
+
+
+        AC_CHECK_LIB([tntdb], [tntdb::connectCached],
+            [
+                CFLAGS="${tntdb_synthetic_cflags} ${CFLAGS}"
+                LDFLAGS="${tntdb_synthetic_libs} ${LDFLAGS}"
+                LIBS="${tntdb_synthetic_libs} ${LIBS}"
+
+                AC_SUBST([tntdb_CFLAGS],[${tntdb_synthetic_cflags}])
+                AC_SUBST([tntdb_LIBS],[${tntdb_synthetic_libs}])
+                was_tntdb_check_lib_detected=yes
+                PKGCFG_LIBS_PRIVATE="$PKGCFG_LIBS_PRIVATE -ltntdb"
+            ],
+            [AC_MSG_ERROR([cannot link with -ltntdb, install tntdb])])
+    ])
+
+if test "x$was_tntdb_check_lib_detected" = "xno"; then
+    CFLAGS="${tntdb_CFLAGS} ${CFLAGS}"
+    LIBS="${tntdb_LIBS} ${LIBS}"
 fi
 
 was_fty_proto_check_lib_detected=no
@@ -506,6 +506,19 @@ AM_CONDITIONAL(ON_GNU, test "x$fty_metric_store_on_gnu" = "xyes")
 AM_CONDITIONAL(INSTALL_MAN, test "x$fty_metric_store_install_man" = "xyes")
 AM_CONDITIONAL(BUILD_DOC, test "x$fty_metric_store_build_doc" = "xyes")
 
+AC_ARG_ENABLE([dist_cmakefiles],
+    AS_HELP_STRING([--enable-dist_cmakefiles],
+        [Distribute CMakeLists.txt and related files [default depends: on if present and not cross compiling]]),
+    [enable_dist_cmakefiles=$enableval],
+    [AC_MSG_CHECKING([for presence of CMake recipes])
+if test "x$cross_compiling" = "xyes"; then
+     enable_dist_cmakefiles=no
+else
+     AC_CHECK_FILE($srcdir/CMakeLists.txt, [enable_dist_cmakefiles=yes], [enable_dist_cmakefiles=no])
+fi
+     AC_MSG_RESULT([$enable_dist_cmakefiles])])
+AM_CONDITIONAL(ENABLE_DIST_CMAKEFILES, test "x$enable_dist_cmakefiles" = "xyes")
+
 # Check for fty-metric-store intent
 AC_ARG_ENABLE([fty-metric-store],
     AS_HELP_STRING([--enable-fty-metric-store],
@@ -592,6 +605,33 @@ else
     AC_SUBST(pkg_config_defines, "")
 fi
 
+AC_ARG_ENABLE([Werror],
+    AS_HELP_STRING([--enable-Werror],
+        [Add -Wall -Werror to GCC/GXX arguments [default=no; default=auto if nothing specified]]),
+    [AS_IF([test -n "$enableval"], [enable_Werror=$enableval], [enable_Werror=auto])],
+    [enable_Werror=no])
+
+AS_IF([test "x$enable_Werror" = "xyes" || test "x$enable_Werror" = "xauto"],
+    [AS_IF([test -n "$CC"],[AS_IF([$CC --version 2>&1 | grep 'Free Software Foundation' > /dev/null],
+        [AC_MSG_NOTICE([Enabling pedantic errors for GNU C])
+         CFLAGS="$CFLAGS -Wall -Werror"],
+        [AC_MSG_NOTICE([Not enabling pedantic errors: compiler not supported by this recipe (not GNU C)])
+         AS_IF([test "x$enable_Werror" = "xyes"], [AC_MSG_ERROR([--enable-Werror=yes was requested and can not be satisfied for C: $CC])])
+        ])])
+     AS_IF([test -n "$CXX"],[AS_IF([$CXX --version 2>&1 | grep 'Free Software Foundation' > /dev/null],
+        [AC_MSG_NOTICE([Enabling pedantic errors for GNU C++])
+         CXXFLAGS="$CXXFLAGS -Wall -Werror"],
+        [AC_MSG_NOTICE([Not enabling pedantic errors: compiler not supported by this recipe (not GNU C++)])
+         AS_IF([test "x$enable_Werror" = "xyes"], [AC_MSG_ERROR([--enable-Werror=yes was requested and can not be satisfied for C++: $CXX])])
+        ])])
+     AS_IF([test -n "$CPP"],[AS_IF([$CPP --version 2>&1 | grep 'Free Software Foundation' > /dev/null],
+        [AC_MSG_NOTICE([Enabling pedantic errors for GNU CPP preprocessor])
+         CPPFLAGS="$CPPFLAGS -Wall -Werror"],
+        [AC_MSG_NOTICE([Not enabling pedantic errors: preprocessor not supported by this recipe (not GNU CPP)])
+         AS_IF([test "x$enable_Werror" = "xyes"], [AC_MSG_ERROR([--enable-Werror=yes was requested and can not be satisfied for CPP: $CPP])])
+        ])])
+])
+
 # Specify output files
 AC_CONFIG_FILES([Makefile
                  doc/Makefile
@@ -639,6 +679,8 @@ echo Package version............... : $PACKAGE-$VERSION
 echo
 echo C compiler.................... : $CC
 echo C compiler flags.............. : $CFLAGS
+echo C++ compiler.................. : $CXX
+echo C++ compiler flags............ : $CXXFLAGS
 echo Configure date................ : $BUILD_DATE
 echo Build architecture............ : $BUILD_ARCH
 echo Build docs.................... : $fty_metric_store_build_doc
@@ -660,7 +702,7 @@ echo
 echo '##########################################################################'
 
 echo
-echo Configure complete! Now procced with:
+echo Configure complete! Now proceed with:
 echo "    - 'make'               compile the project"
 echo "    - 'make check'         run the project's selftest"
 echo "    - 'make install'       install the project to $prefix"

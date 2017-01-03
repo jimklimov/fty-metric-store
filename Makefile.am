@@ -19,13 +19,13 @@ AM_CPPFLAGS = \
     ${libzmq_CFLAGS} \
     ${czmq_CFLAGS} \
     ${malamute_CFLAGS} \
-    ${tntdb_CFLAGS} \
     ${cxxtools_CFLAGS} \
+    ${tntdb_CFLAGS} \
     ${fty_proto_CFLAGS} \
     -D__STDC_FORMAT_MACROS \
     -I$(srcdir)/include
 
-project_libs = ${libzmq_LIBS} ${czmq_LIBS} ${malamute_LIBS} ${tntdb_LIBS} ${cxxtools_LIBS} ${fty_proto_LIBS}
+project_libs = ${libzmq_LIBS} ${czmq_LIBS} ${malamute_LIBS} ${cxxtools_LIBS} ${tntdb_LIBS} ${fty_proto_LIBS}
 
 SUBDIRS = doc
 DIST_SUBDIRS = doc
@@ -35,15 +35,20 @@ noinst_PROGRAMS =
 check_PROGRAMS =
 noinst_LTLIBRARIES =
 TESTS =
+EXTRA_DIST =
 
-EXTRA_DIST = \
-    CMakeLists.txt \
+if ENABLE_DIST_CMAKEFILES
+EXTRA_DIST += \
     Findlibzmq.cmake \
     Findczmq.cmake \
     Findmalamute.cmake \
-    Findtntdb.cmake \
     Findcxxtools.cmake \
+    Findtntdb.cmake \
     Findfty_proto.cmake \
+    CMakeLists.txt
+endif
+
+EXTRA_DIST += \
     src/logger.h \
     src/actor_commands.h \
     src/converter.h \
