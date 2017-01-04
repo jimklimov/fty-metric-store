@@ -145,9 +145,9 @@ actor_commands (
         zstr_free (&config_file);
     }
     else
-    if (streq (cmd, "BIOS_METRIC_STORE_AGE"))
+    if (streq (cmd, FTY_METRIC_STORE_CONF_PREFIX))
     {
-        zsys_debug ("BIOS_METRIC_STORE_AGE is not yet implemented!");
+        zsys_debug ("%s is not yet implemented!", FTY_METRIC_STORE_CONF_PREFIX);
     }
     else {
         log_warning ("Command '%s' is unknown or not implemented", cmd);

@@ -13,7 +13,7 @@ EnvironmentFile=-/usr/share/bios/etc/default/fty__fty-metric-store.service.conf
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/default/fty__fty-metric-store.service.conf
 EnvironmentFile=-/etc/default/bios-db-rw
-ExecStart=@prefix@/bin/fty-metric-store-cleaner
+ExecStart=@prefix@/bin/fty-metric-store-cleaner @sysconfdir@/@PACKAGE@/fty-metric-store.cfg
 
 [Install]
 WantedBy=bios.target
