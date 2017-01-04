@@ -32,7 +32,6 @@
 
 static const char *AGENT_NAME = "fty-metric-store";
 static const char *ENDPOINT = "ipc://@/malamute";
-static const char *CONF_PREFIX = "FTY_METRIC_STORE_AGE";
 #define STEPS_SIZE 8
 static const char *STEPS[STEPS_SIZE] = {"RT", "15m", "30m", "1h", "8h", "1d", "7d", "30d"};
 static const char *DEFAULTS[STEPS_SIZE] = {"0", "1", "1",   "7",  "7",  "30", "30", "180"};
@@ -147,14 +146,14 @@ int main (int argc, char *argv [])
     for (int i = 0; i != STEPS_SIZE; i++) {
         char *env;
         const char *dfl = DEFAULTS [i];
-        int r = asprintf (&env, "%s_%s", CONF_PREFIX, STEPS[i]);
+        int r = asprintf (&env, "%s_%s", FTY_METRIC_STORE_CONF_PREFIX, STEPS[i]);
         assert (r != -1);
 
         if (getenv (env)) {
             dfl = getenv (env);
         }
 
-        zstr_sendx (ms_server, CONF_PREFIX, STEPS [i], dfl, NULL);
+        zstr_sendx (ms_server, FTY_METRIC_STORE_CONF_PREFIX, STEPS [i], dfl, NULL);
 
         zstr_free (&env);
     }

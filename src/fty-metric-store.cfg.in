@@ -3,8 +3,8 @@
 server
     log_level = "LOG_WARNING"   #   ...tbd...
     verbose = 0                 #   Do verbose logging of activity?
-store
-    rt = 0          # ...tbd...
+store                           # define the storage time for various windows, 0 means do not save at all
+    rt = 0
     15m = 1
     30m = 1
     1h = 7

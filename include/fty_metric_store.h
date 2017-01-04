@@ -26,5 +26,6 @@
 #include "fty_metric_store_library.h"
 
 //  Add your own public definitions here, if you need them
+#define FTY_METRIC_STORE_CONF_PREFIX "FTY_METRIC_STORE_AGE"
 
 #endif

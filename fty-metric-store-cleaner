@@ -4,7 +4,7 @@
 PATH=/usr/bin:/usr/sbin:/bin:/sbin
 export PATH
 
-export CONF_PREFIX=BIOS_METRIC_STORE_AGE_
+export CONF_PREFIX=FTY_METRIC_STORE_AGE_
 
 # read env variables
 test -f /etc/default/bios-db-rw || die "Can't get db credentials"
@@ -59,6 +59,24 @@ do_remove_hist() {
 if [[ -z "${DB_USER}" || -z "${DB_PASSWD}" ]]; then
     die "DB_USER or DB_PASSWD are empty"
 fi
+
+CFG=${1}
+if [[ -z "${CFG}" ]]; then
+    CFG=/etc/fty-metric-store/fty-metric-store.cfg
+fi
+
+if [[ ! -f "${CFG}" ]]; then
+    die "Config file not found"
+fi
+
+FTY_METRIC_STORE_AGE_RT=$(grep -E '^ +rt' "${CFG}" | cut -d '=' -f 2)
+FTY_METRIC_STORE_AGE_15m=$(grep -E '^ +15m' "${CFG}" | cut -d '=' -f 2)
+FTY_METRIC_STORE_AGE_30m=$(grep -E '^ +30m' "${CFG}" | cut -d '=' -f 2)
+FTY_METRIC_STORE_AGE_1h=$(grep -E '^ +1h' "${CFG}" | cut -d '=' -f 2)
+FTY_METRIC_STORE_AGE_8h=$(grep -E '^ +8h' "${CFG}" | cut -d '=' -f 2)
+FTY_METRIC_STORE_AGE_24h=$(grep -E '^ +24h' "${CFG}" | cut -d '=' -f 2)
+FTY_METRIC_STORE_AGE_7d=$(grep -E '^ +7d' "${CFG}" | cut -d '=' -f 2)
+FTY_METRIC_STORE_AGE_30d=$(grep -E '^ +30d' "${CFG}" | cut -d '=' -f 2)
 
 for AGE_NAME in $(set | grep "^${CONF_PREFIX}" | cut -d '=' -f 1); do
     AGE=${!AGE_NAME}
