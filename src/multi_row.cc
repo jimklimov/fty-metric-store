@@ -103,4 +103,12 @@ long
     return (time.tv_sec * 1000) + (time.tv_usec / 1000);
 }       
     
+//  --------------------------------------------------------------------------
+//  Self test of this class
+
+void
+multi_row_test (bool verbose)
+{
+    printf (" * actor_commands: Empty test - OK.");
+}
 
