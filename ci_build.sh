@@ -167,12 +167,17 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         CONFIG_OPTS+=("CPP=${CPP}")
     fi
 
-    # Clone and build dependencies
+    # Clone and build dependencies, if not yet installed to Travis env as DEBs
+    # or MacOS packages; other OSes are not currently supported by Travis cloud
     [ -z "$CI_TIME" ] || echo "`date`: Starting build of dependencies (if any)..."
+
+    # Start of recipe for dependency: libzmq
     if ! ((command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libzmq3-dev >/dev/null 2>&1) || \
            (command -v brew >/dev/null 2>&1 && brew ls --versions libzmq >/dev/null 2>&1)); then
-        $CI_TIME git clone --quiet --depth 1 https://github.com/zeromq/libzmq.git libzmq
+        echo ""
         BASE_PWD=${PWD}
+        echo "`date`: INFO: Building prerequisite 'libzmq' from Git repository..." >&2
+        $CI_TIME git clone --quiet --depth 1 https://github.com/zeromq/libzmq.git libzmq
         cd libzmq
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -196,10 +201,14 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         $CI_TIME make install
         cd "${BASE_PWD}"
     fi
+
+    # Start of recipe for dependency: czmq
     if ! ((command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libczmq-dev >/dev/null 2>&1) || \
            (command -v brew >/dev/null 2>&1 && brew ls --versions czmq >/dev/null 2>&1)); then
-        $CI_TIME git clone --quiet --depth 1 -b v3.0.2 https://github.com/zeromq/czmq.git czmq
+        echo ""
         BASE_PWD=${PWD}
+        echo "`date`: INFO: Building prerequisite 'czmq' from Git repository..." >&2
+        $CI_TIME git clone --quiet --depth 1 -b v3.0.2 https://github.com/zeromq/czmq.git czmq
         cd czmq
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -223,10 +232,14 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         $CI_TIME make install
         cd "${BASE_PWD}"
     fi
+
+    # Start of recipe for dependency: malamute
     if ! ((command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libmlm-dev >/dev/null 2>&1) || \
            (command -v brew >/dev/null 2>&1 && brew ls --versions malamute >/dev/null 2>&1)); then
-        $CI_TIME git clone --quiet --depth 1 https://github.com/zeromq/malamute.git malamute
+        echo ""
         BASE_PWD=${PWD}
+        echo "`date`: INFO: Building prerequisite 'malamute' from Git repository..." >&2
+        $CI_TIME git clone --quiet --depth 1 https://github.com/zeromq/malamute.git malamute
         cd malamute
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -250,10 +263,14 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         $CI_TIME make install
         cd "${BASE_PWD}"
     fi
+
+    # Start of recipe for dependency: cxxtools
     if ! ((command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list cxxtools-dev >/dev/null 2>&1) || \
            (command -v brew >/dev/null 2>&1 && brew ls --versions cxxtools >/dev/null 2>&1)); then
-        $CI_TIME git clone --quiet --depth 1 -b 42ity https://github.com/42ity/cxxtools cxxtools
+        echo ""
         BASE_PWD=${PWD}
+        echo "`date`: INFO: Building prerequisite 'cxxtools' from Git repository..." >&2
+        $CI_TIME git clone --quiet --depth 1 -b 42ity https://github.com/42ity/cxxtools cxxtools
         cd cxxtools
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -277,11 +294,16 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         $CI_TIME make install
         cd "${BASE_PWD}"
     fi
+
+    # Start of recipe for dependency: tntdb
     if ! ((command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list tntdb-dev >/dev/null 2>&1) || \
            (command -v brew >/dev/null 2>&1 && brew ls --versions tntdb >/dev/null 2>&1)); then
-        $CI_TIME git clone --quiet --depth 1 -b 1.3 https://github.com/42ity/tntdb tntdb
+        echo ""
         BASE_PWD=${PWD}
-        cd tntdb/tntdb
+        echo "`date`: INFO: Building prerequisite 'tntdb' from Git repository..." >&2
+        $CI_TIME git clone --quiet --depth 1 -b 1.3 https://github.com/42ity/tntdb tntdb
+        cd tntdb
+        cd ./tntdb
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
         git --no-pager log --oneline -n1
@@ -304,10 +326,14 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         $CI_TIME make install
         cd "${BASE_PWD}"
     fi
+
+    # Start of recipe for dependency: fty-proto
     if ! ((command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_proto-dev >/dev/null 2>&1) || \
            (command -v brew >/dev/null 2>&1 && brew ls --versions fty-proto >/dev/null 2>&1)); then
-        $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/fty-proto fty-proto
+        echo ""
         BASE_PWD=${PWD}
+        echo "`date`: INFO: Building prerequisite 'fty-proto' from Git repository..." >&2
+        $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/fty-proto fty-proto
         cd fty-proto
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -333,7 +359,8 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
     fi
 
     # Build and check this project; note that zprojects always have an autogen.sh
-    [ -z "$CI_TIME" ] || echo "`date`: Starting build of currently tested project with DRAFT APIs..."
+    echo ""
+    echo "`date`: INFO: Starting build of currently tested project with DRAFT APIs..."
     CCACHE_BASEDIR=${PWD}
     export CCACHE_BASEDIR
     # Only use --enable-Werror on projects that are expected to have it
@@ -362,7 +389,8 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
     )
 
     # Build and check this project without DRAFT APIs
-    [ -z "$CI_TIME" ] || echo "`date`: Starting build of currently tested project without DRAFT APIs..."
+    echo ""
+    echo "`date`: INFO: Starting build of currently tested project without DRAFT APIs..."
     make distclean
 
     git clean -f

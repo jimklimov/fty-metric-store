@@ -78,6 +78,10 @@ class MultiRowCache {
         long _first_ms = get_clock_ms();
 };
 
+//  Self test of this class
+FTY_METRIC_STORE_EXPORT void
+    multi_row_test (bool verbose);
+
 #endif // #define SRC_PERSIST_
 
 

@@ -53,25 +53,25 @@ BuildRequires:  gcc-c++
 BuildRequires:  zeromq-devel
 BuildRequires:  czmq-devel
 BuildRequires:  malamute-devel
-BuildRequires:  tntdb-devel
 BuildRequires:  cxxtools-devel
+BuildRequires:  tntdb-devel
 BuildRequires:  fty-proto-devel
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
 fty-metric-store persistance for metrics.
 
-%package -n libfty_metric_store1
+%package -n libfty_metric_store0
 Group:          System/Libraries
 Summary:        persistance for metrics shared library
 
-%description -n libfty_metric_store1
+%description -n libfty_metric_store0
 This package contains shared library for fty-metric-store: persistance for metrics
 
-%post -n libfty_metric_store1 -p /sbin/ldconfig
-%postun -n libfty_metric_store1 -p /sbin/ldconfig
+%post -n libfty_metric_store0 -p /sbin/ldconfig
+%postun -n libfty_metric_store0 -p /sbin/ldconfig
 
-%files -n libfty_metric_store1
+%files -n libfty_metric_store0
 %defattr(-,root,root)
 %doc COPYING
 %{_libdir}/libfty_metric_store.so.*
@@ -79,12 +79,12 @@ This package contains shared library for fty-metric-store: persistance for metri
 %package devel
 Summary:        persistance for metrics
 Group:          System/Libraries
-Requires:       libfty_metric_store1 = %{version}
+Requires:       libfty_metric_store0 = %{version}
 Requires:       zeromq-devel
 Requires:       czmq-devel
 Requires:       malamute-devel
-Requires:       tntdb-devel
 Requires:       cxxtools-devel
+Requires:       tntdb-devel
 Requires:       fty-proto-devel
 
 %description devel
@@ -97,6 +97,7 @@ This package contains development files for fty-metric-store: persistance for me
 %{_libdir}/libfty_metric_store.so
 %{_libdir}/pkgconfig/libfty_metric_store.pc
 %{_mandir}/man3/*
+%{_mandir}/man7/*
 
 %prep
 %setup -q
@@ -120,15 +121,15 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %{_mandir}/man1/fty-metric-store*
 %{_bindir}/fty-metric-store-cleaner
 %config(noreplace) %{_sysconfdir}/fty-metric-store/fty-metric-store.cfg
-/usr/lib/systemd/system/fty-metric-store.service
+/usr/lib/systemd/system/fty-metric-store{,@*}.{service,*}
 %dir %{_sysconfdir}/fty-metric-store
 %if 0%{?suse_version} > 1315
 %post
-%systemd_post fty-metric-store.service
+%systemd_post fty-metric-store{,@*}.{service,*}
 %preun
-%systemd_preun fty-metric-store.service
+%systemd_preun fty-metric-store{,@*}.{service,*}
 %postun
-%systemd_postun_with_restart fty-metric-store.service
+%systemd_postun_with_restart fty-metric-store{,@*}.{service,*}
 %endif
 
 %changelog
