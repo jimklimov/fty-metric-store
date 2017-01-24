@@ -1,7 +1,7 @@
 #
 #    fty-metric-store - Persistance for metrics
 #
-#    Copyright (C) 2014 - 2015 Eaton                                        
+#    Copyright (C) 2014 - 2017 Eaton                                        
 #                                                                           
 #    This program is free software; you can redistribute it and/or modify   
 #    it under the terms of the GNU General Public License as published by   
@@ -121,15 +121,15 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %{_mandir}/man1/fty-metric-store*
 %{_bindir}/fty-metric-store-cleaner
 %config(noreplace) %{_sysconfdir}/fty-metric-store/fty-metric-store.cfg
-/usr/lib/systemd/system/fty-metric-store{,@*}.{service,*}
+/usr/lib/systemd/system/fty-metric-store.service
 %dir %{_sysconfdir}/fty-metric-store
 %if 0%{?suse_version} > 1315
 %post
-%systemd_post fty-metric-store{,@*}.{service,*}
+%systemd_post fty-metric-store.service
 %preun
-%systemd_preun fty-metric-store{,@*}.{service,*}
+%systemd_preun fty-metric-store.service
 %postun
-%systemd_postun_with_restart fty-metric-store{,@*}.{service,*}
+%systemd_postun_with_restart fty-metric-store.service
 %endif
 
 %changelog

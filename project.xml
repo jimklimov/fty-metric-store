@@ -13,13 +13,13 @@
 
     <include filename = "license.xml" />
     <version major = "1" minor = "0" patch = "0" />
-    
+
     <use project = "czmq" release = "v3.0.2" test = "zmsg_test" />
     <use project = "malamute" test = "mlm_server_test" />
- 
+
     <use project = "cxxtools"
-        release = "42ity"      
-        repository = "https://github.com/42ity/cxxtools" 
+        release = "42ity"
+        repository = "https://github.com/42ity/cxxtools"
         header = "cxxtools/allocator.h"
         test = "cxxtools::Utf8Codec::Utf8Codec"
         /> 
@@ -28,7 +28,7 @@
         release = "1.3"
         repository = "https://github.com/42ity/tntdb"
         builddir = "tntdb"
-        test="tntdb::connectCached"  
+        test="tntdb::connectCached"
         />
 
     <use project = "fty-proto" libname = "libfty_proto" prefix="fty_proto"

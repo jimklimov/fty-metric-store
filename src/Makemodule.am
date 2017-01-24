@@ -61,7 +61,8 @@ bin_PROGRAMS += src/fty-metric-store
 src_fty_metric_store_CPPFLAGS = ${AM_CPPFLAGS}
 src_fty_metric_store_LDADD = ${program_libs}
 src_fty_metric_store_SOURCES = src/fty_metric_store.cc
-src_fty_metric_store_config_DATA = src/fty-metric-store.cfg
+src_fty_metric_store_config_DATA =
+src_fty_metric_store_config_DATA += src/fty-metric-store.cfg
 src_fty_metric_store_configdir = $(sysconfdir)/fty-metric-store
 if WITH_SYSTEMD_UNITS
 systemdsystemunit_DATA += src/fty-metric-store.service
