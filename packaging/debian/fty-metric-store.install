@@ -2,5 +2,5 @@ usr/bin/fty-metric-store
 usr/share/man/man1/fty-metric-store.1
 usr/bin/fty-metric-store-cleaner
 etc/fty-metric-store/fty-metric-store.cfg
-lib/systemd/system/fty-metric-store{,@*}.{service,*}
+lib/systemd/system/fty-metric-store.service
 

@@ -1,7 +1,7 @@
 /*  =========================================================================
     fty_metric_store_classes - private header file
 
-    Copyright (C) 2014 - 2015 Eaton                                        
+    Copyright (C) 2014 - 2017 Eaton                                        
                                                                            
     This program is free software; you can redistribute it and/or modify   
     it under the terms of the GNU General Public License as published by   
@@ -31,6 +31,30 @@
 
 //  External API
 #include "../include/fty_metric_store.h"
+
+//  Extra headers
+
+//  Opaque class structures to allow forward references
+#ifndef LOGGER_T_DEFINED
+typedef struct _logger_t logger_t;
+#define LOGGER_T_DEFINED
+#endif
+#ifndef ACTOR_COMMANDS_T_DEFINED
+typedef struct _actor_commands_t actor_commands_t;
+#define ACTOR_COMMANDS_T_DEFINED
+#endif
+#ifndef CONVERTER_T_DEFINED
+typedef struct _converter_t converter_t;
+#define CONVERTER_T_DEFINED
+#endif
+#ifndef PERSISTANCE_T_DEFINED
+typedef struct _persistance_t persistance_t;
+#define PERSISTANCE_T_DEFINED
+#endif
+#ifndef MULTI_ROW_T_DEFINED
+typedef struct _multi_row_t multi_row_t;
+#define MULTI_ROW_T_DEFINED
+#endif
 
 //  Internal API
 #include "logger.h"
