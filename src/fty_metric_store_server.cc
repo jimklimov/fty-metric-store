@@ -355,7 +355,7 @@ s_process_metric (fty_proto_t *m)
     if (!fty_proto_aux_string (m, "x-cm-type", NULL)) {
         return;
     }
-    std::string db_topic = std::string (fty_proto_type (m)) + "@" + std::string(fty_proto_element_src (m));
+    std::string db_topic = std::string (fty_proto_type (m)) + "@" + std::string(fty_proto_name (m));
 
     m_msrmnt_value_t value = 0;
     m_msrmnt_scale_t scale = 0;
@@ -379,7 +379,7 @@ s_process_metric (fty_proto_t *m)
     }
 
     // time is a time when message was received
-    uint64_t _time = fty_proto_aux_number(m, "time", ::time(NULL));
+    uint64_t _time = fty_proto_time (m);
     tntdb::Connection conn;
     try {
         conn = tntdb::connectCached(url);
@@ -391,7 +391,7 @@ s_process_metric (fty_proto_t *m)
 
     insert_into_measurement(
             conn, db_topic.c_str(), value, scale, _time,
-            fty_proto_unit (m), fty_proto_element_src (m));
+            fty_proto_unit (m), fty_proto_name (m));
 }
 
 static void
