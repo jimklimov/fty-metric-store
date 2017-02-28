@@ -122,6 +122,8 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %{_bindir}/fty-metric-store-cleaner
 %config(noreplace) %{_sysconfdir}/fty-metric-store/fty-metric-store.cfg
 /usr/lib/systemd/system/fty-metric-store.service
+/usr/lib/systemd/system/fty-metric-store-cleaner.service
+/usr/lib/systemd/system/fty-metric-store-cleaner.timer
 %dir %{_sysconfdir}/fty-metric-store
 %if 0%{?suse_version} > 1315
 %post
