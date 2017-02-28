@@ -396,6 +396,7 @@ actor_commands_test (bool verbose)
     zmsg_destroy (&message);
     mlm_client_destroy (&client);
     zactor_destroy (&malamute);
+    remove ("stderr.txt");
 
     //  @end
     printf ("OK\n");
