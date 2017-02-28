@@ -58,7 +58,7 @@ do_remove_hist() {
     local age=${1}
     local step=${2}
 
-    if [[ -z "${age}" || ${age} -le 0 ]]; then
+    if [[ -z "${age}" || ${age} -lt 0 ]]; then
         info "${CONF_PREFIX}${step} is missing or non positive, not removing historical data"
         return 0
     fi
