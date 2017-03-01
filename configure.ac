@@ -931,14 +931,10 @@ AM_COND_IF([WITH_SYSTEMD_UNITS],
     [AC_CONFIG_FILES([
                  src/fty-metric-store.service
                  src/fty-metric-store-cleaner.service
-                 src/fty-metric-store-cleaner.timer                
+                 src/fty-metric-store-cleaner.timer
     ])],
     [])
 
-AC_MSG_CHECKING([whether to redistribute src/Makemodule-local.am])
-AC_CHECK_FILE([$srcdir/src/Makemodule-local.am], [enable_dist_SRC_MAKEMODULE_LOCAL=yes], [enable_dist_SRC_MAKEMODULE_LOCAL=no])
-AM_CONDITIONAL([ENABLE_DIST_SRC_MAKEMODULE_LOCAL], [test "x$enable_dist_SRC_MAKEMODULE_LOCAL" = "xyes"])
-AC_MSG_RESULT([$enable_dist_SRC_MAKEMODULE_LOCAL])
 
 AC_OUTPUT
 
