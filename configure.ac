@@ -930,6 +930,8 @@ AC_CONFIG_FILES([Makefile
 AM_COND_IF([WITH_SYSTEMD_UNITS],
     [AC_CONFIG_FILES([
                  src/fty-metric-store.service
+                 src/fty-metric-store-cleaner.service
+                 src/fty-metric-store-cleaner.timer                
     ])],
     [])
 

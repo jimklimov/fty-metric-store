@@ -65,7 +65,9 @@ src_fty_metric_store_config_DATA =
 src_fty_metric_store_config_DATA += src/fty-metric-store.cfg
 src_fty_metric_store_configdir = $(sysconfdir)/fty-metric-store
 if WITH_SYSTEMD_UNITS
-systemdsystemunit_DATA += src/fty-metric-store.service
+systemdsystemunit_DATA += src/fty-metric-store.service \
+                          src/fty-metric-store-cleaner.service \
+                          src/fty-metric-store-cleaner.timer
 endif #WITH_SYSTEMD_UNITS
 endif #ENABLE_FTY_METRIC_STORE
 
