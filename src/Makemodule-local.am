@@ -1,7 +1,0 @@
-CLEANFILES += \
-	stderr.txt
-
-clean-local: clean-local-check
-.PHONY: clean-local-check
-clean-local-check:
-	rm -rf .testdir || true

@@ -167,6 +167,7 @@ actor_commands (
     fseek (fp, 0L, SEEK_END);\
     uint64_t sz = ftell (fp);\
     fclose (fp);\
+    if (sz > 0) { int r; printf ("FATAL: stderr of last operation was not empty:\n"); r = system( ("cat " + str_stderr_txt).c_str() ); assert (r==0); };\
     assert (sz == 0);\
     }
 
@@ -175,12 +176,25 @@ actor_commands (
     fseek (fp, 0L, SEEK_END);\
     uint64_t sz = ftell (fp);\
     fclose (fp);\
+    if (sz == 0) { printf ("FATAL: stderr of last operation was empty while expected to have an error log!\n"); };\
     assert (sz > 0);\
     }
 
 void
 actor_commands_test (bool verbose)
 {
+    // Note: If your selftest reads SCMed fixture data, please keep it in
+    // src/selftest-ro; if your test creates filesystem objects, please
+    // do so under src/selftest-rw. They are defined below along with a
+    // usecase (asert) to make compilers happy.
+    const char *SELFTEST_DIR_RO = "src/selftest-ro";
+    const char *SELFTEST_DIR_RW = "src/selftest-rw";
+    assert (SELFTEST_DIR_RO);
+    assert (SELFTEST_DIR_RW);
+    std::string str_SELFTEST_DIR_RO = std::string(SELFTEST_DIR_RO);
+    std::string str_SELFTEST_DIR_RW = std::string(SELFTEST_DIR_RW);
+    std::string str_stderr_txt = str_SELFTEST_DIR_RW + "/stderr.txt";
+
     printf (" * actor_commands: ");
     //  @selftest
     static const char* endpoint = "ipc://ms-test-actor-commands";
@@ -199,7 +213,7 @@ actor_commands_test (bool verbose)
 
 
     // --------------------------------------------------------------
-    FILE *fp = freopen ("stderr.txt", "w+", stderr);
+    FILE *fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // empty message - expected fail
     message = zmsg_new ();
     assert (message);
@@ -210,7 +224,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // empty string - expected fail
     message = zmsg_new ();
     assert (message);
@@ -222,7 +236,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // unknown command - expected fail
     message = zmsg_new ();
     assert (message);
@@ -234,7 +248,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // CONFIGURE - expected fail
     message = zmsg_new ();
     assert (message);
@@ -249,7 +263,7 @@ actor_commands_test (bool verbose)
     // --------------------------------------------------------------
 /* TODO: uncomment test when CONFIGURE functionality implemented
 
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // CONFIGURE
     message = zmsg_new ();
     assert (message);
@@ -263,7 +277,7 @@ actor_commands_test (bool verbose)
 
 */
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // CONNECT - expected fail
     message = zmsg_new ();
     assert (message);
@@ -277,7 +291,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // CONNECT - expected fail
     message = zmsg_new ();
     assert (message);
@@ -291,7 +305,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // CONNECT - expected fail; bad endpoint
     message = zmsg_new ();
     assert (message);
@@ -311,7 +325,7 @@ actor_commands_test (bool verbose)
     assert (client);
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
 
     // $TERM
     message = zmsg_new ();
@@ -353,7 +367,7 @@ actor_commands_test (bool verbose)
     STDERR_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // CONSUMER - expected fail
     message = zmsg_new ();
     assert (message);
@@ -367,7 +381,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // CONSUMER - expected fail
     message = zmsg_new ();
     assert (message);
@@ -381,7 +395,7 @@ actor_commands_test (bool verbose)
     STDERR_NON_EMPTY
 
     // --------------------------------------------------------------
-    fp = freopen ("stderr.txt", "w+", stderr);
+    fp = freopen (str_stderr_txt.c_str(), "w+", stderr);
     // PRODUCER - expected fail
     message = zmsg_new ();
     assert (message);
@@ -396,7 +410,7 @@ actor_commands_test (bool verbose)
     zmsg_destroy (&message);
     mlm_client_destroy (&client);
     zactor_destroy (&malamute);
-    remove ("stderr.txt");
+    remove (str_stderr_txt.c_str());
 
     //  @end
     printf ("OK\n");

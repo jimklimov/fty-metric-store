@@ -48,6 +48,6 @@
 
     <main name = "fty-metric-store"             service = "1">Metric store agent</main>
 
-    <bin name = "fty-metric-store-cleaner"      service = "1">Cleanup the old metrics</bin>
+    <bin name = "fty-metric-store-cleaner"      service = "1" timer = "1">Cleanup the old metrics</bin>
 
 </project>
