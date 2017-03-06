@@ -32,11 +32,13 @@ override_dh_auto_test:
 	echo "Skipped for now"
 
 override_dh_auto_configure:
+	if test -f .autogened ; then true ; else ./autogen.sh && touch .autogened ; fi && \
 	dh_auto_configure -- \
 		--with-systemd-units \
 		--enable-drafts=$(DRAFTS)
 
 %:
+	if test "$@" = "build" ; then ./autogen.sh && touch .autogened ; else true ; fi && \
 	dh $@ \
 		--with systemd \
 		--with autoreconf
