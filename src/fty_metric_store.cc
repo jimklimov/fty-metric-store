@@ -78,15 +78,15 @@ int main (int argc, char *argv [])
     int log_level = -1;
     char *config_file = NULL;
 
-    while (true) {
-        static struct option long_options[] =
-        {
-            {"help",            no_argument,        0,  1},
-            {"log-level",       required_argument,  0,  'l'},
-            {"config-file",     required_argument,  0,  'c'},
-            {0,                 0,                  0,  0}
-        };
+    static struct option long_options[] =
+    {
+        {"help",            no_argument,        0,  1},
+        {"log-level",       required_argument,  0,  'l'},
+        {"config-file",     required_argument,  0,  'c'},
+        {NULL,              0,                  0,  0}
+    };
 
+    while (true) {
         int option_index = 0;
         int c = getopt_long (argc, argv, "hl:c:", long_options, &option_index);
         if (c == -1)

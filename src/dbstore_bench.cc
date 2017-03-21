@@ -175,9 +175,8 @@ int main(int argc, char** argv) {
 
      // get options
     int c;
-    while(true) {
-        static struct option long_options[] =
-        {
+    static struct option long_options[] =
+    {
             {"help",       no_argument,       &help,    1},
             {"url",        required_argument, 0,'u'},
             {"delay",      required_argument, 0,'d'},
@@ -186,8 +185,10 @@ int main(int argc, char** argv) {
             {"element",    required_argument, 0,'e'},
             {"topic",      required_argument, 0,'t'},
             {"insert_every",  required_argument, 0,'i'},
-            {0, 0, 0, 0}
-        };
+            {NULL, 0, 0, 0}
+    };
+
+    while(true) {
         int option_index = 0;
         c = getopt_long (argc, argv, "h:u:d:p:m:e:t:i:", long_options, &option_index);
         if (c == -1) break;
