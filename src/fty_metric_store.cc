@@ -78,6 +78,11 @@ int main (int argc, char *argv [])
     int log_level = -1;
     char *config_file = NULL;
 
+// Some systems define struct option with non-"const" "char *"
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
     static struct option long_options[] =
     {
         {"help",            no_argument,        0,  1},
@@ -85,6 +90,9 @@ int main (int argc, char *argv [])
         {"config-file",     required_argument,  0,  'c'},
         {NULL,              0,                  0,  0}
     };
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
 
     while (true) {
         int option_index = 0;
