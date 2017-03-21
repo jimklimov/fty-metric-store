@@ -108,7 +108,7 @@ int main (int argc, char *argv [])
             case 'c':
             {
                 config_file = optarg;
-                log_warning ("--config-file switch no implemented yet '%s'", config_file);
+                log_warning ("--config-file switch not implemented yet '%s'", config_file);
                 break;
             }
             case 'h':
