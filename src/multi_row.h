@@ -39,7 +39,7 @@ using namespace std;
 class MultiRowCache {
     public:
         MultiRowCache ();
-        MultiRowCache ( const u_int32_t max_row,const u_int32_t max_delay_s )
+        MultiRowCache ( const uint32_t max_row,const uint32_t max_delay_s )
         {
             _max_row = max_row;
             _max_delay_s = max_delay_s;
@@ -71,8 +71,8 @@ class MultiRowCache {
 
     private:
         list<string> _row_cache;
-        u_int32_t _max_delay_s; 
-        u_int32_t _max_row;
+        uint32_t _max_delay_s;
+        uint32_t _max_row;
         
         long get_clock_ms();
         long _first_ms = get_clock_ms();
