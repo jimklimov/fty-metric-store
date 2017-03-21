@@ -70,10 +70,10 @@ void insert_new_measurement(
 ){
     char topic_name[32];
     char device_name[32];
-    
+
     sprintf(device_name,"bench.asset%d",device_id);
     sprintf(topic_name,"bench.topic%d@%s",topic_id,device_name);
-    
+
     insert_into_measurement(
             conn, topic_name, rand() % 999999, 0, time(NULL),
             "%", device_name);
@@ -115,7 +115,7 @@ void bench(
 
     long begin_overall_ms = get_clock_ms();
     long begin_periodic_ms = get_clock_ms();
-    
+
     int dev_by_topic=num_device * topic_per_device;
 
     zsys_info("time;total;rows; mean over last %ds (row/s)",periodic_display);

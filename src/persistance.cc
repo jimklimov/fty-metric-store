@@ -240,8 +240,6 @@ m_msrmnt_tpc_id_t
     }
 }
 
-
-
 void
     flush_measurement(tntdb::Connection &conn)
 {
@@ -276,15 +274,17 @@ void
         }
     flush_measurement(conn);
 }
+
 // Do a flush only if cache is full or enough time elapsed since the last flush
-void 
+void
     flush_measurement_when_needed(tntdb::Connection &conn)
 {
     if (_row_cache.is_ready_for_insert()){
         flush_measurement(conn);
     }
 }
-void 
+
+void
     flush_measurement_when_needed(std::string &url)
 {
     if (_row_cache.is_ready_for_insert()){
