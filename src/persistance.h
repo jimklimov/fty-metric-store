@@ -86,7 +86,7 @@ void
     persistance_test (bool verbose);
 
 FTY_METRIC_STORE_EXPORT
-void 
+void
     flush_measurement_when_needed(std::string &url);
 
 FTY_METRIC_STORE_EXPORT

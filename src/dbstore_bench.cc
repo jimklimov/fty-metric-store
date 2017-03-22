@@ -70,10 +70,10 @@ void insert_new_measurement(
 ){
     char topic_name[32];
     char device_name[32];
-    
+
     sprintf(device_name,"bench.asset%d",device_id);
     sprintf(topic_name,"bench.topic%d@%s",topic_id,device_name);
-    
+
     insert_into_measurement(
             conn, topic_name, rand() % 999999, 0, time(NULL),
             "%", device_name);
@@ -115,7 +115,7 @@ void bench(
 
     long begin_overall_ms = get_clock_ms();
     long begin_periodic_ms = get_clock_ms();
-    
+
     int dev_by_topic=num_device * topic_per_device;
 
     zsys_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
@@ -175,9 +175,14 @@ int main(int argc, char** argv) {
 
      // get options
     int c;
-    while(true) {
-        static struct option long_options[] =
-        {
+// Some systems define struct option with non-"const" "char *"
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
+    static const char *short_options = "h:u:d:p:m:e:t:i:";
+    static struct option long_options[] =
+    {
             {"help",       no_argument,       &help,    1},
             {"url",        required_argument, 0,'u'},
             {"delay",      required_argument, 0,'d'},
@@ -186,10 +191,15 @@ int main(int argc, char** argv) {
             {"element",    required_argument, 0,'e'},
             {"topic",      required_argument, 0,'t'},
             {"insert_every",  required_argument, 0,'i'},
-            {0, 0, 0, 0}
-        };
+            {NULL, 0, 0, 0}
+    };
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
+
+    while(true) {
         int option_index = 0;
-        c = getopt_long (argc, argv, "h:u:d:p:m:e:t:i:", long_options, &option_index);
+        c = getopt_long (argc, argv, short_options, long_options, &option_index);
         if (c == -1) break;
         switch (c) {
         case 'u':

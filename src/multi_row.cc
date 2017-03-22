@@ -27,7 +27,6 @@
 #include <ctime>
 
 
-    
 MultiRowCache::MultiRowCache (){
     _max_row = MAX_ROW_DEFAULT;
     char *env_max_row = getenv (EV_DBSTORE_MAX_ROW);
@@ -67,7 +66,7 @@ void
         }
 }
 
-bool 
+bool
     MultiRowCache::is_ready_for_insert()
 {
     if (_row_cache.size()==0) return false;
@@ -76,7 +75,7 @@ bool
     long elapsed_periodic_ms = (now_ms - _first_ms);
     //check if max time duration expired or max cache size limit reached
     return (_row_cache.size()>=_max_row || elapsed_periodic_ms >= (long)_max_delay_s * 1000 );
-    
+
 }
 /* return INSERT query or empty string if no value in cache available*/
 string
@@ -94,15 +93,15 @@ string
     return query;
 }
 
-        
-long 
+
+long
     MultiRowCache::get_clock_ms()
 {
     struct timeval time;
     gettimeofday(&time, NULL); // Get Time
     return (time.tv_sec * 1000) + (time.tv_usec / 1000);
-}       
-    
+}
+
 //  --------------------------------------------------------------------------
 //  Self test of this class
 

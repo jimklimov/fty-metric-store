@@ -78,17 +78,26 @@ int main (int argc, char *argv [])
     int log_level = -1;
     char *config_file = NULL;
 
-    while (true) {
-        static struct option long_options[] =
-        {
-            {"help",            no_argument,        0,  1},
-            {"log-level",       required_argument,  0,  'l'},
-            {"config-file",     required_argument,  0,  'c'},
-            {0,                 0,                  0,  0}
-        };
+// Some systems define struct option with non-"const" "char *"
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
+    static const char *short_options = "hl:c:";
+    static struct option long_options[] =
+    {
+        {"help",            no_argument,        0,  1},
+        {"log-level",       required_argument,  0,  'l'},
+        {"config-file",     required_argument,  0,  'c'},
+        {NULL,              0,                  0,  0}
+    };
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
 
+    while (true) {
         int option_index = 0;
-        int c = getopt_long (argc, argv, "hl:c:", long_options, &option_index);
+        int c = getopt_long (argc, argv, short_options, long_options, &option_index);
         if (c == -1)
             break;
         switch (c) {
@@ -100,7 +109,7 @@ int main (int argc, char *argv [])
             case 'c':
             {
                 config_file = optarg;
-                log_warning ("--config-file switch no implemented yet '%s'", config_file);
+                log_warning ("--config-file switch not implemented yet '%s'", config_file);
                 break;
             }
             case 'h':

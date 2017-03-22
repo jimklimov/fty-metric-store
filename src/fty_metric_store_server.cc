@@ -73,7 +73,7 @@
             example:
                 "8CB3E9A9649B"/"ERROR"/"BAD_MESSAGE"
 
-        In case the request message does not include <uuid> or the subject is incorrect, 
+        In case the request message does not include <uuid> or the subject is incorrect,
         bios_agent_ms_server SHALL NOT respond back.
 
 @end
@@ -248,7 +248,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
         }
         goto exit;
     }
- 
+
     zmsg_addstr (msg_out, "OK");
     zmsg_addstr (msg_out, asset_name);
     zmsg_addstr (msg_out, quantity);
@@ -462,11 +462,11 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         void *which = zpoller_wait (poller, timeout);
         if (which == NULL) {
             if (zpoller_expired (poller) && !zsys_interrupted ){
-                //do a periodic flush 
+                //do a periodic flush
                 flush_measurement_when_needed(url);
                 continue;
             }
-            
+
             if (zpoller_terminated (poller) || zsys_interrupted) {
                 zsys_warning ("zpoller_terminated () or zsys_interrupted");
                 break;

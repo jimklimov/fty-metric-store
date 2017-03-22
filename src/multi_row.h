@@ -39,12 +39,11 @@ using namespace std;
 class MultiRowCache {
     public:
         MultiRowCache ();
-        MultiRowCache ( const u_int32_t max_row,const u_int32_t max_delay_s )
+        MultiRowCache ( const uint32_t max_row,const uint32_t max_delay_s )
         {
             _max_row = max_row;
             _max_delay_s = max_delay_s;
         }
-        
 
         void push_back(
             int64_t time,
@@ -53,27 +52,27 @@ class MultiRowCache {
             m_msrmnt_tpc_id_t topic_id );
 
         /*
-         * \brief check one of those conditions : 
+         * \brief check one of those conditions :
          *  number of values > _max_row
          * or delay between first value and now > _max_delay_s
          */
         bool is_ready_for_insert();
-        
+
         string get_insert_query();
-        
+
         void clear(){_row_cache.clear(); reset_clock();}
         void reset_clock(){_first_ms = get_clock_ms();}
-        
+
         int get_max_row(){return _max_row;}
-        
+
         int get_max_delay(){return _max_delay_s;}
-        
+
 
     private:
         list<string> _row_cache;
-        u_int32_t _max_delay_s; 
-        u_int32_t _max_row;
-        
+        uint32_t _max_delay_s;
+        uint32_t _max_row;
+
         long get_clock_ms();
         long _first_ms = get_clock_ms();
 };
@@ -83,6 +82,3 @@ FTY_METRIC_STORE_EXPORT void
     multi_row_test (bool verbose);
 
 #endif // #define SRC_PERSIST_
-
-
-
