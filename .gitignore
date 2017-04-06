@@ -74,7 +74,7 @@ install_manifest.txt
 Testing/
 CMakeLists.txt
 *.cmake
-builds/cmake
+builds/cmake/
 
 # Repositories downloaded by CI integration scripts
 libzmq/
