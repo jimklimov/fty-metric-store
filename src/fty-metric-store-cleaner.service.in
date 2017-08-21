@@ -18,7 +18,7 @@ EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
 EnvironmentFile=-@sysconfdir@/default/fty__fty-metric-store.service.conf
 Environment="prefix=@prefix@"
-EnvironmentFile=-@sysconfdir@/default/bios-db-rw
+EnvironmentFile=@sysconfdir@/default/bios-db-rw
 ExecStart=@prefix@/bin/fty-metric-store-cleaner @sysconfdir@/@PACKAGE@/fty-metric-store.cfg
 
 [Install]
