@@ -16,7 +16,7 @@ EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
 EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
 Environment="prefix=@prefix@"
-EnvironmentFile=-@sysconfdir@/default/bios-db-rw
+EnvironmentFile=@sysconfdir@/default/bios-db-rw
 ExecStart=@prefix@/bin/fty-metric-store @sysconfdir@/@PACKAGE@/fty-metric-store.cfg
 Restart=always
 

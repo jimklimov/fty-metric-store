@@ -1,5 +1,7 @@
 [Unit]
 Description=Timer to call fty-metric-store-cleaner.service
+Requires=fty-db-init.service
+After=fty-db-init.service
 PartOf=bios.target
 
 [Timer]
