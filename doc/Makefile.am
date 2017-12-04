@@ -73,7 +73,7 @@ fty-metric-store.txt: $(top_srcdir)/src/fty_metric_store.cc
 	"$(srcdir)/mkman" "fty_metric_store" "$(builddir)/fty-metric-store.txt" "$(srcdir)/.."
 
 
-clean:
+clean-local:
 	rm -f *.1 *.3 *.7 $(GENERATED_DOCS)
 
 doc: $(GENERATED_DOCS)

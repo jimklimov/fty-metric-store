@@ -1,21 +1,21 @@
 #
 #    fty-metric-store - Persistance for metrics
 #
-#    Copyright (C) 2014 - 2017 Eaton                                        
-#                                                                           
-#    This program is free software; you can redistribute it and/or modify   
-#    it under the terms of the GNU General Public License as published by   
-#    the Free Software Foundation; either version 2 of the License, or      
-#    (at your option) any later version.                                    
-#                                                                           
-#    This program is distributed in the hope that it will be useful,        
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of         
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
-#    GNU General Public License for more details.                           
-#                                                                           
+#    Copyright (C) 2014 - 2017 Eaton
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
 #    You should have received a copy of the GNU General Public License along
 #    with this program; if not, write to the Free Software Foundation, Inc.,
-#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.            
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
 # To build with draft APIs, use "--with drafts" in rpmbuild for local builds or add
@@ -28,6 +28,7 @@
 %else
 %define DRAFTS no
 %endif
+%define SYSTEMD_UNIT_DIR %(pkg-config --variable=systemdsystemunitdir systemd)
 Name:           fty-metric-store
 Version:        1.0.0
 Release:        1
@@ -50,12 +51,13 @@ BuildRequires:  systemd
 %{?systemd_requires}
 BuildRequires:  xmlto
 BuildRequires:  gcc-c++
+BuildRequires:  libsodium-devel
 BuildRequires:  zeromq-devel
 BuildRequires:  czmq-devel
 BuildRequires:  malamute-devel
+BuildRequires:  fty-proto-devel
 BuildRequires:  cxxtools-devel
 BuildRequires:  tntdb-devel
-BuildRequires:  fty-proto-devel
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -80,12 +82,13 @@ This package contains shared library for fty-metric-store: persistance for metri
 Summary:        persistance for metrics
 Group:          System/Libraries
 Requires:       libfty_metric_store0 = %{version}
+Requires:       libsodium-devel
 Requires:       zeromq-devel
 Requires:       czmq-devel
 Requires:       malamute-devel
+Requires:       fty-proto-devel
 Requires:       cxxtools-devel
 Requires:       tntdb-devel
-Requires:       fty-proto-devel
 
 %description devel
 persistance for metrics development tools
@@ -100,6 +103,7 @@ This package contains development files for fty-metric-store: persistance for me
 %{_mandir}/man7/*
 
 %prep
+
 %setup -q
 
 %build
@@ -121,9 +125,9 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %{_mandir}/man1/fty-metric-store*
 %{_bindir}/fty-metric-store-cleaner
 %config(noreplace) %{_sysconfdir}/fty-metric-store/fty-metric-store.cfg
-/usr/lib/systemd/system/fty-metric-store.service
-/usr/lib/systemd/system/fty-metric-store-cleaner.service
-/usr/lib/systemd/system/fty-metric-store-cleaner.timer
+%{SYSTEMD_UNIT_DIR}/fty-metric-store.service
+%{SYSTEMD_UNIT_DIR}/fty-metric-store-cleaner.service
+%{SYSTEMD_UNIT_DIR}/fty-metric-store-cleaner.timer
 %dir %{_sysconfdir}/fty-metric-store
 %if 0%{?suse_version} > 1315
 %post
