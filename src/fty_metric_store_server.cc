@@ -458,18 +458,12 @@ fty_metric_store_server (zsock_t *pipe, void* args)
 
     uint64_t timeout = (uint64_t) POLL_INTERVAL;
 
-    uint64_t last = zclock_mono ();
     while (!zsys_interrupted) {
         void *which = zpoller_wait (poller, timeout);
-        uint64_t now = zclock_mono();
-        if (now - last >= timeout) {
-            last = now;
-            //do a periodic flush
-            zsys_debug("Performing periodic flush");
-            flush_measurement_when_needed(url);
-        }
         if (which == NULL) {
             if (zpoller_expired (poller) && !zsys_interrupted ){
+                //do a periodic flush
+                flush_measurement_when_needed(url);
                 continue;
             }
 
