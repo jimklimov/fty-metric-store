@@ -43,7 +43,7 @@ static const char *DEFAULTS[STEPS_SIZE] = {"0", "1", "1",   "7",  "7",  "30", "3
 void usage () {
     puts ("fty-metric-store [options] ...\n"
           "  --log-level / -l       bios log level\n"
-          "                         overrides setting in env. variable FTY_LOG_LEVEL\n"
+          "                         overrides setting in env. variable BIOS_LOG_LEVEL\n"
           "  --config-file / -c     TODO\n"
           "  --help / -h            this information\n"
           );
@@ -130,7 +130,7 @@ int main (int argc, char *argv [])
     //  3. command line argument
     //  4. actor message - NOT IMPLEMENTED YET
     if (log_level == -1) {
-        char *env_log_level = getenv ("FTY_LOG_LEVEL");
+        char *env_log_level = getenv ("BIOS_LOG_LEVEL");
         if (env_log_level) {
             log_level = get_log_level (env_log_level);
             if (log_level == -1)
