@@ -506,10 +506,7 @@ fty_metric_store_server (zsock_t *pipe, void* args)
             zsys_error ("Unrecognized mlm_client_command () = '%s'", command ? command : "(null)");
         }
 
-        // XXX: normally code fails on zmsg_is assert called from zmsg_destroy
-        //      do the check manually to not crash the server
-        if (message && zmsg_is (message))
-            zmsg_destroy (&message);
+        zmsg_destroy (&message);
     } // while (!zsys_interrupted)
     flush_measurement(url);
 
