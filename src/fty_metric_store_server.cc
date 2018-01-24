@@ -107,7 +107,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
     zmsg_t *msg = *message_p;
 
     if ( zmsg_size(msg) < 8 ) {
-        zmsg_destroy (&msg);
+        zmsg_destroy (message_p);
         zsys_error ("Message has unsupported format, ignore it");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
@@ -116,7 +116,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
 
     char *cmd = zmsg_popstr (msg);
     if ( !streq(cmd, "GET") ) {
-        zmsg_destroy (&msg);
+        zmsg_destroy (message_p);
         zsys_error ("GET is misssing");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
@@ -327,7 +327,7 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 
     if (zmsg_size (msg) == 0) {
         zsys_info ("Empty message with subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
-        zmsg_destroy (&msg);
+        zmsg_destroy (message_p);
     }
 
     zmsg_t *msg_out = zmsg_new ();
@@ -336,10 +336,10 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
     zstr_free (&uuid);
 
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
-        msg_out = s_handle_aggregate (client, msg_out, &msg);
+        msg_out = s_handle_aggregate (client, msg_out, message_p);
     } else {
         zsys_info ("Bad subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
-        zmsg_destroy (&msg);
+        zmsg_destroy (message_p);
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "UNSUPPORTED_SUBJECT");
     }
