@@ -523,7 +523,47 @@ fty_metric_store_server (zsock_t *pipe, void* args)
 void
 fty_metric_store_server_test (bool verbose)
 {
+    static const char *endpoint = "inproc://malamute-test";
+
     printf (" * fty_metric_store_server: ");
 
-    printf ("Empty Test. OK.\n");
+    zactor_t *server = zactor_new (mlm_server, (void*) "Malamute");
+    zstr_sendx (server, "BIND", endpoint, NULL);
+    if (verbose)
+        zstr_send (server, "VERBOSE");
+
+    zactor_t *self = zactor_new (fty_metric_store_server, (void*) NULL);
+    zstr_sendx (self, "CONNECT", endpoint, "fty-metric-store", NULL);
+
+    if (verbose)
+        printf ("Test for mailbox request error handling");
+    mlm_client_t *mbox_client = mlm_client_new();
+    assert(mlm_client_connect(mbox_client, endpoint, 5000, "mbox-query") >= 0);
+
+    static const char *uuid = "012345679";
+    zmsg_t *msg = zmsg_new();
+    zmsg_addstr (msg, uuid);
+    zmsg_addstr (msg, "GET");
+    zmsg_addstr (msg, "some-asset");
+    zmsg_addstr (msg, "realpower.default");
+    zmsg_addstr (msg, "15m");
+    zmsg_addstr (msg, "min");
+    zmsg_addstr (msg, "0");
+    zmsg_addstr (msg, "9999");
+    zmsg_addstr (msg, "1");
+    //  This will fail because either the database is not accessible or the
+    //  asset does not exist
+    assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);
+    assert ((msg = mlm_client_recv (mbox_client)));
+    char *received_uuid = zmsg_popstr (msg);
+    assert (streq (uuid, received_uuid));
+    zstr_free (&received_uuid);
+    zmsg_print (msg);
+    zmsg_destroy (&msg);
+
+    mlm_client_destroy(&mbox_client);
+    zactor_destroy(&self);
+    zactor_destroy(&server);
+
+    printf ("OK.\n");
 }
