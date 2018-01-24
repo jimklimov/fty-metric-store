@@ -98,13 +98,13 @@ static std::string url =
 
 // destroys the message
 static zmsg_t*
-s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
+s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
-    assert (msg_out && zmsg_is (msg_out));
     assert (message_p && *message_p);
 
     zmsg_t *msg = *message_p;
+    zmsg_t *msg_out = zmsg_new ();
 
     if ( zmsg_size(msg) < 8 ) {
         zmsg_destroy (message_p);
@@ -279,17 +279,9 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
     rv = select_measurements (url, topic, start_date, end_date, add_measurement, is_ordered);
     if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
-
-        // clean all frames from msg_out except first one
-        zmsg_first (msg_out);
-        for (zframe_t *frame = zmsg_next (msg_out);
-                       frame != NULL;
-                       frame = zmsg_next (msg_out))
-        {
-            zframe_destroy (&frame);
-        }
-
         zsys_error ("unexpected error during measurement selecting");
+        zmsg_destroy (&msg_out);
+        msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "INTERNAL_ERROR");
     }
@@ -330,19 +322,19 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
         zmsg_destroy (message_p);
     }
 
-    zmsg_t *msg_out = zmsg_new ();
+    zmsg_t *msg_out;
     char *uuid = zmsg_popstr (msg);
-    zmsg_addstr (msg_out, uuid);
-    zstr_free (&uuid);
-
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
-        msg_out = s_handle_aggregate (client, msg_out, message_p);
+        msg_out = s_handle_aggregate (client, message_p);
     } else {
         zsys_info ("Bad subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
         zmsg_destroy (message_p);
+        msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "UNSUPPORTED_SUBJECT");
     }
+    zmsg_pushstr (msg_out, uuid);
+    zstr_free (&uuid);
     mlm_client_sendto (client, mlm_client_sender(client), mlm_client_subject(client), NULL, 1000, &msg_out);
 }
 
