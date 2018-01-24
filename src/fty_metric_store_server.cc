@@ -66,16 +66,16 @@ static std::string url =
 
 // destroys the message
 static zmsg_t*
-s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
+s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
-    assert (msg_out && zmsg_is (msg_out));
     assert (message_p && *message_p);
 
     zmsg_t *msg = *message_p;
+    zmsg_t *msg_out = zmsg_new ();
 
     if ( zmsg_size(msg) < 8 ) {
-        zmsg_destroy (&msg);
+        zmsg_destroy (message_p);
         zsys_error ("Message has unsupported format, ignore it");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
@@ -84,7 +84,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
 
     char *cmd = zmsg_popstr (msg);
     if ( !streq(cmd, "GET") ) {
-        zmsg_destroy (&msg);
+        zmsg_destroy (message_p);
         zsys_error ("GET is misssing");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
@@ -247,17 +247,9 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t *msg_out, zmsg_t **message_p)
     rv = select_measurements (url, topic, start_date, end_date, add_measurement, is_ordered);
     if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
-
-        // clean all frames from msg_out except first one
-        zmsg_first (msg_out);
-        for (zframe_t *frame = zmsg_next (msg_out);
-                       frame != NULL;
-                       frame = zmsg_next (msg_out))
-        {
-            zframe_destroy (&frame);
-        }
-
         zsys_error ("unexpected error during measurement selecting");
+        zmsg_destroy (&msg_out);
+        msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "INTERNAL_ERROR");
     }
@@ -295,22 +287,22 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
 
     if (zmsg_size (msg) == 0) {
         zsys_info ("Empty message with subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
-        zmsg_destroy (&msg);
+        zmsg_destroy (message_p);
     }
 
-    zmsg_t *msg_out = zmsg_new ();
+    zmsg_t *msg_out;
     char *uuid = zmsg_popstr (msg);
-    zmsg_addstr (msg_out, uuid);
-    zstr_free (&uuid);
-
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
-        msg_out = s_handle_aggregate (client, msg_out, &msg);
+        msg_out = s_handle_aggregate (client, message_p);
     } else {
         zsys_info ("Bad subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
-        zmsg_destroy (&msg);
+        zmsg_destroy (message_p);
+        msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "UNSUPPORTED_SUBJECT");
     }
+    zmsg_pushstr (msg_out, uuid);
+    zstr_free (&uuid);
     mlm_client_sendto (client, mlm_client_sender(client), mlm_client_subject(client), NULL, 1000, &msg_out);
 }
 
@@ -488,10 +480,7 @@ fty_metric_store_server (zsock_t *pipe, void* args)
             zsys_error ("Unrecognized mlm_client_command () = '%s'", command ? command : "(null)");
         }
 
-        // XXX: normally code fails on zmsg_is assert called from zmsg_destroy
-        //      do the check manually to not crash the server
-        if (message && zmsg_is (message))
-            zmsg_destroy (&message);
+        zmsg_destroy (&message);
     } // while (!zsys_interrupted)
     flush_measurement(url);
 
@@ -505,7 +494,47 @@ fty_metric_store_server (zsock_t *pipe, void* args)
 void
 fty_metric_store_server_test (bool verbose)
 {
+    static const char *endpoint = "inproc://malamute-test";
+
     printf (" * fty_metric_store_server: ");
 
-    printf ("Empty Test. OK.\n");
+    zactor_t *server = zactor_new (mlm_server, (void*) "Malamute");
+    zstr_sendx (server, "BIND", endpoint, NULL);
+    if (verbose)
+        zstr_send (server, "VERBOSE");
+
+    zactor_t *self = zactor_new (fty_metric_store_server, (void*) NULL);
+    zstr_sendx (self, "CONNECT", endpoint, "fty-metric-store", NULL);
+
+    if (verbose)
+        printf ("Test for mailbox request error handling");
+    mlm_client_t *mbox_client = mlm_client_new();
+    assert(mlm_client_connect(mbox_client, endpoint, 5000, "mbox-query") >= 0);
+
+    static const char *uuid = "012345679";
+    zmsg_t *msg = zmsg_new();
+    zmsg_addstr (msg, uuid);
+    zmsg_addstr (msg, "GET");
+    zmsg_addstr (msg, "some-asset");
+    zmsg_addstr (msg, "realpower.default");
+    zmsg_addstr (msg, "15m");
+    zmsg_addstr (msg, "min");
+    zmsg_addstr (msg, "0");
+    zmsg_addstr (msg, "9999");
+    zmsg_addstr (msg, "1");
+    //  This will fail because either the database is not accessible or the
+    //  asset does not exist
+    assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);
+    assert ((msg = mlm_client_recv (mbox_client)));
+    char *received_uuid = zmsg_popstr (msg);
+    assert (streq (uuid, received_uuid));
+    zstr_free (&received_uuid);
+    zmsg_print (msg);
+    zmsg_destroy (&msg);
+
+    mlm_client_destroy(&mbox_client);
+    zactor_destroy(&self);
+    zactor_destroy(&server);
+
+    printf ("OK.\n");
 }

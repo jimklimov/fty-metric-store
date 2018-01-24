@@ -12,3 +12,10 @@
    fun:send
    ...
 }
+{
+   <tntdb_connect>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   obj:*/libtntdb.so.*
+}
