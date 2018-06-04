@@ -33,10 +33,10 @@ src/fty_metric_store_selftest
 *.app
 core
 
- # Distcheck workspace and archives
-fty-metric-store-1.0.0/
-fty-metric-store-1.0.0.tar.gz
-fty-metric-store-1.0.0.zip
+# Distcheck workspace and archives
+fty-metric-store-*/
+fty-metric-store-*.tar.gz
+fty-metric-store-*.zip
 
 # Man pages
 doc/*.1
@@ -75,7 +75,6 @@ compile_commands.json
 DartConfiguration.tcl
 install_manifest.txt
 Testing/
-CMakeLists.txt
 
 # CMake in general
 builds/cmake/
@@ -83,12 +82,13 @@ CMake*
 *.cmake
 
 # Repositories downloaded by CI integration scripts
+libsodium/
 libzmq/
 czmq/
 malamute/
+fty-proto/
 cxxtools/
 tntdb/
-fty-proto/
 
 # Travis build area
 tmp/
@@ -117,7 +117,7 @@ src/app/gen/
 src/app/obj/
 src/app/local.properties
 
-# Android -dependencies
+# Android - dependencies
 src/app/jni/output
 
 # Python build directory
@@ -138,6 +138,9 @@ bindings/qt/selftest/selftest
 *.swp
 *.bak
 .test*
+
+# Netbeans directory
+nbproject/
 
 # editor backups
 *~
