@@ -1,5 +1,6 @@
 /*  =========================================================================
     persistance - Some helper functions for persistance layer
+    Note: This file was manually amended, see below
 
     Copyright (C) 2014 - 2017 Eaton
 
@@ -81,7 +82,8 @@ int
         const char        *asset_name);
 
 //  Self test of this class
-FTY_METRIC_STORE_EXPORT
+//  Note: Keep this definition in sync with fty_metric_store_classes.h
+FTY_METRIC_STORE_PRIVATE
 void
     persistance_test (bool verbose);
 
