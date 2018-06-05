@@ -1,5 +1,6 @@
 /*
 Copyright (C) 2016 Eaton
+    Note: This file was manually amended, see below
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -78,7 +79,8 @@ class MultiRowCache {
 };
 
 //  Self test of this class
-FTY_METRIC_STORE_EXPORT void
+//  Note: Keep this definition in sync with fty_metric_store_classes.h
+FTY_METRIC_STORE_PRIVATE void
     multi_row_test (bool verbose);
 
 #endif // #define SRC_PERSIST_

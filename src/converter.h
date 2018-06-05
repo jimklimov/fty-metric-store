@@ -1,5 +1,6 @@
 /*  =========================================================================
-    converter - Some helper forntions to convert between types
+    converter - Some helper functions to convert between types
+    Note: This file was manually amended, see below
 
     Copyright (C) 2014 - 2017 Eaton
 
@@ -41,7 +42,8 @@ FTY_METRIC_STORE_EXPORT bool
     stobiosf_wrapper (const std::string& string, int32_t& integer, int8_t& scale);
 
 //  Self test of this class
-FTY_METRIC_STORE_EXPORT void
+//  Note: Keep this definition in sync with fty_metric_store_classes.h
+FTY_METRIC_STORE_PRIVATE void
     converter_test (bool verbose);
 
 //  @end
