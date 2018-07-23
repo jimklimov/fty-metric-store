@@ -61,7 +61,6 @@ EXTRA_DIST += \
 endif
 
 EXTRA_DIST += \
-    src/logger.h \
     src/actor_commands.h \
     src/converter.h \
     src/persistance.h \

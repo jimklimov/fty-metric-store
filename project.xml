@@ -72,7 +72,6 @@
             />
     </use>
 
-    <class name = "logger"          private = "1">logging api</class>
     <class name = "actor commands"  private = "1">actor commands</class>
     <class name = "converter"       private = "1">Some helper functions to convert between types</class>
     <class name = "persistance"     private = "1">Some helper functions for persistance layer</class>

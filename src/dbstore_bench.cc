@@ -97,14 +97,14 @@ void bench(
         int total_duration=-1,
         int insertion=10){
 
-    zsys_info("delay=%dms periodic=%ds minute=%dm element=%d topic=%d insert_every=%d",
+    log_info("delay=%dms periodic=%ds minute=%dm element=%d topic=%d insert_every=%d",
             delay,periodic_display,total_duration,num_device,topic_per_device,insertion);
     tntdb::Connection conn;
     try {
         conn = tntdb::connectCached(url);
         conn.ping();
     } catch (const std::exception &e) {
-        zsys_error("Can't connect to the database");
+        log_error("Can't connect to the database");
         return;
     }
 
@@ -118,7 +118,7 @@ void bench(
 
     int dev_by_topic=num_device * topic_per_device;
 
-    zsys_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
+    log_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
     while(!zsys_interrupted) {
         insert_new_measurement(stat_total_row%dev_by_topic/topic_per_device, stat_total_row%topic_per_device,
                 conn);
@@ -130,7 +130,7 @@ void bench(
         long elapsed_periodic_ms = (now_ms - begin_periodic_ms);
         //every period seconds display current total row count and the trend over the last periodic_display second
         if(elapsed_periodic_ms > periodic_display * 1000 ){
-            zsys_info("%s;%d;%d;%.2lf",get_clock_fmt(),stat_total_row,stat_periodic_row,stat_periodic_row/(elapsed_periodic_ms/1000.0));
+            log_info("%s;%d;%d;%.2lf",get_clock_fmt(),stat_total_row,stat_periodic_row,stat_periodic_row/(elapsed_periodic_ms/1000.0));
             stat_periodic_row=0;
             begin_periodic_ms = now_ms;
         }
@@ -144,7 +144,7 @@ exit:
     flush_measurement(url);
     long elapsed_overall_ms = (get_clock_ms() - begin_overall_ms);
 
-    zsys_info("%d rows inserted in  %.2lf seconds, overall avg=%.2lf row/s",stat_total_row,elapsed_overall_ms/1000.0,stat_total_row/(elapsed_overall_ms/1000.0));
+    log_info("%d rows inserted in  %.2lf seconds, overall avg=%.2lf row/s",stat_total_row,elapsed_overall_ms/1000.0,stat_total_row/(elapsed_overall_ms/1000.0));
 }
 
 void usage ()
@@ -234,7 +234,8 @@ int main(int argc, char** argv) {
     }
     if (help) { usage(); exit(1); }
 
-    zsys_debug("## bench started ##");
+    ManageFtyLog::setInstanceFtylog("dbstore_bench", LOG_CONFIG);
+    log_debug("## bench started ##");
 
     bench(delay,element, topic,  periodic, minute, insert_every);
     return 0;

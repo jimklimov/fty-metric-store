@@ -186,6 +186,9 @@ converter_test (bool verbose)
 {
     printf (" * converter: ");
 
+    ManageFtyLog::setInstanceFtylog("fty_metric_store_server");
+    if (verbose)
+        ManageFtyLog::getInstanceFtylog()->setVeboseMode();
     //  @selftest
 
     int8_t scale = 0;

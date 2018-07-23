@@ -147,7 +147,7 @@ actor_commands (
     else
     if (streq (cmd, FTY_METRIC_STORE_CONF_PREFIX))
     {
-        zsys_debug ("%s is not yet implemented!", FTY_METRIC_STORE_CONF_PREFIX);
+        log_debug ("%s is not yet implemented!", FTY_METRIC_STORE_CONF_PREFIX);
     }
     else {
         log_warning ("Command '%s' is unknown or not implemented", cmd);
@@ -196,6 +196,9 @@ actor_commands_test (bool verbose)
     std::string str_stderr_txt = str_SELFTEST_DIR_RW + "/stderr.txt";
 
     printf (" * actor_commands: ");
+    ManageFtyLog::setInstanceFtylog("actor_commands");
+    // since this test suite checks stderr, log on WARNING level
+    ManageFtyLog::getInstanceFtylog()->setLogLevelWarning();
     //  @selftest
     static const char* endpoint = "ipc://ms-test-actor-commands";
 
