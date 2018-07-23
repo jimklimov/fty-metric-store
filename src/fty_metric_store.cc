@@ -36,46 +36,18 @@ static const char *ENDPOINT = "ipc://@/malamute";
 static const char *STEPS[STEPS_SIZE] = {"RT", "15m", "30m", "1h", "8h", "1d", "7d", "30d"};
 static const char *DEFAULTS[STEPS_SIZE] = {"0", "1", "1",   "7",  "7",  "30", "30", "180"};
 
-#define str(x) #x
-
-#define DEFAULT_LOG_LEVEL LOG_WARNING
-
 void usage () {
     puts ("fty-metric-store [options] ...\n"
-          "  --log-level / -l       bios log level\n"
-          "                         overrides setting in env. variable BIOS_LOG_LEVEL\n"
+          "  --verbose / -v         verbose mode\n"
           "  --config-file / -c     TODO\n"
           "  --help / -h            this information\n"
           );
 }
 
-int get_log_level (const char *level) {
-    if (streq (level, str(LOG_DEBUG))) {
-        return LOG_DEBUG;
-    }
-    else
-    if (streq (level, str(LOG_INFO))) {
-        return LOG_INFO;
-    }
-    else
-    if (streq (level, str(LOG_WARNING))) {
-        return LOG_WARNING;
-    }
-    else
-    if (streq (level, str(LOG_ERR))) {
-        return LOG_ERR;
-    }
-    else
-    if (streq (level, str(LOG_CRIT))) {
-        return LOG_CRIT;
-    }
-    return -1;
-}
-
 int main (int argc, char *argv [])
 {
     int help = 0;
-    int log_level = -1;
+    bool verbose = false;
     char *config_file = NULL;
 
 // Some systems define struct option with non-"const" "char *"
@@ -83,11 +55,11 @@ int main (int argc, char *argv [])
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #endif
-    static const char *short_options = "hl:c:";
+    static const char *short_options = "hvc:";
     static struct option long_options[] =
     {
         {"help",            no_argument,        0,  1},
-        {"log-level",       required_argument,  0,  'l'},
+        {"verbose",         no_argument,        0,  'v'},
         {"config-file",     required_argument,  0,  'c'},
         {NULL,              0,                  0,  0}
     };
@@ -101,9 +73,9 @@ int main (int argc, char *argv [])
         if (c == -1)
             break;
         switch (c) {
-            case 'l':
+            case 'v':
             {
-                log_level = get_log_level (optarg);
+                verbose = true;
                 break;
             }
             case 'c':
@@ -124,27 +96,14 @@ int main (int argc, char *argv [])
         usage ();
         return EXIT_FAILURE;
     }
-    // log_level cascade (priority ascending)
-    //  1. default value
-    //  2. env. variable
-    //  3. command line argument
-    //  4. actor message - NOT IMPLEMENTED YET
-    if (log_level == -1) {
-        char *env_log_level = getenv ("BIOS_LOG_LEVEL");
-        if (env_log_level) {
-            log_level = get_log_level (env_log_level);
-            if (log_level == -1)
-                log_level = DEFAULT_LOG_LEVEL;
-        }
-        else {
-            log_level = DEFAULT_LOG_LEVEL;
-        }
-    }
-    log_set_level (log_level);
+
+    ManageFtyLog::setInstanceFtylog(AGENT_NAME, LOG_CONFIG);
+    if (verbose)
+        ManageFtyLog::getInstanceFtylog()->setVeboseMode();
 
     zactor_t *ms_server = zactor_new (fty_metric_store_server, (void *) NULL);
     if (!ms_server) {
-        log_critical ("zactor_new (task = 'fty_metric_store_server', args = 'NULL') failed");
+        log_fatal ("zactor_new (task = 'fty_metric_store_server', args = 'NULL') failed");
         return EXIT_FAILURE;
     }
     zstr_sendx (ms_server, "CONNECT", ENDPOINT, AGENT_NAME, NULL);

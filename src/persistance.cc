@@ -55,15 +55,15 @@ int
         return 0;
     }
     catch (const tntdb::NotFound &e) {
-        zsys_info("Topic '%s' not found.", topic.c_str());
+        log_info("Topic '%s' not found.", topic.c_str());
         return -2;
     }
     catch (const std::exception &e) {
-        zsys_error("Exception caught: %s", e.what());
+        log_error("Exception caught: %s", e.what());
         return -1;
     }
     catch (...) {
-        zsys_error("Unknown exception caught!");
+        log_error("Unknown exception caught!");
         return -1;
     }
 }
@@ -107,11 +107,11 @@ int
         return 0;
     }
     catch (const std::exception &e) {
-        zsys_error("Exception caught: %s", e.what());
+        log_error("Exception caught: %s", e.what());
         return -1;
     }
     catch (...) {
-        zsys_error("Unknown exception caught!");
+        log_error("Unknown exception caught!");
         return -1;
     }
 }
@@ -122,7 +122,7 @@ m_dvc_id_t
         const char        *device_name)
 {
     if(device_name == NULL || device_name[0] == 0 ){
-        zsys_error("[t_bios_discovered_device] can't insert a device with NULL or non device name");
+        log_error("[t_bios_discovered_device] can't insert a device with NULL or non device name");
         return 0;
     }
     m_dvc_id_t id_discovered_device=0;
@@ -140,7 +140,7 @@ m_dvc_id_t
      );
     uint32_t n = st.set("name", device_name).execute();
     id_discovered_device=conn.lastInsertId();
-    zsys_debug("[t_discovered_device]: device '%s' inserted %" PRIu32 " rows ",
+    log_debug("[t_discovered_device]: device '%s' inserted %" PRIu32 " rows ",
               device_name, n);
     if( n == 1 ) {
         // try to update  relation table
@@ -156,9 +156,9 @@ m_dvc_id_t
             "   DD.id_discovered_device NOT IN ( SELECT id_discovered_device FROM t_bios_monitor_asset_relation )"
         );
         n = st.set("name", device_name).execute();
-        zsys_debug("[t_bios_monitor_asset_relation]: inserted %" PRIu32 " rows about %s", n, device_name);
+        log_debug("[t_bios_monitor_asset_relation]: inserted %" PRIu32 " rows about %s", n, device_name);
     }else{
-        zsys_error("[t_discovered_device]:  device %s not inserted", device_name );
+        log_error("[t_discovered_device]:  device %s not inserted", device_name );
     }
     return id_discovered_device;
 }
@@ -187,7 +187,7 @@ m_dvc_id_t
         row["id_discovered_device"].get(id_discovered_device);
         return id_discovered_device;
     }catch(const tntdb::NotFound &e){
-        zsys_debug("[t_bios_discovered_device] device %s not found => try to create it as not classified",device_name);
+        log_debug("[t_bios_discovered_device] device %s not found => try to create it as not classified",device_name);
         //add the device as 'not_classified' type
         // probably device doesn't exist in t_bios_discovered_device. Let's fill it.
         return insert_as_not_classified_device(conn,device_name);
@@ -229,13 +229,13 @@ m_msrmnt_tpc_id_t
 
         m_msrmnt_tpc_id_t topic_id = conn.lastInsertId();
         if ( topic_id != 0 ) {
-            zsys_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows , topic_id %u", topic, n, topic_id);
+            log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows , topic_id %u", topic, n, topic_id);
         } else {
-            zsys_error("[t_bios_measurement_topic]:  topic %s not inserted", topic);
+            log_error("[t_bios_measurement_topic]:  topic %s not inserted", topic);
         }
         return topic_id;
     } catch(const std::exception &e) {
-        zsys_error ("Topic '%s' was not inserted with error: %s", topic, e.what());
+        log_error ("Topic '%s' was not inserted with error: %s", topic, e.what());
         return 0;
     }
 }
@@ -243,7 +243,7 @@ m_msrmnt_tpc_id_t
 void
     flush_measurement(tntdb::Connection &conn)
 {
-    zsys_debug("flush_measurement");
+    log_debug("flush_measurement");
     try {
         tntdb::Statement st;
         string query = _row_cache.get_insert_query();
@@ -253,11 +253,11 @@ void
         }
         st = conn.prepare(query.c_str());
         uint32_t affected_rows = st.execute();
-        zsys_debug("[t_bios_measurement]: flush  measurements from cache, inserted %" PRIu32 " rows ",
+        log_debug("[t_bios_measurement]: flush  measurements from cache, inserted %" PRIu32 " rows ",
                 affected_rows);
         _row_cache.clear();
     } catch(const std::exception &e) {
-        zsys_error ("Abnormal flush termination");
+        log_error ("Abnormal flush termination");
     }
 }
 
@@ -269,7 +269,7 @@ void
             conn = tntdb::connectCached(url);
             conn.ping();
         } catch (const std::exception &e) {
-            zsys_error("Can't connect to the database");
+            log_error("Can't connect to the database");
             return;
         }
     flush_measurement(conn);
@@ -308,21 +308,21 @@ int
     assert ( topic );
 
     if ( topic[0]=='@' ) {
-        zsys_error ("malformed value of topic '%s' is not allowed", topic);
+        log_error ("malformed value of topic '%s' is not allowed", topic);
         return 1;
     }
 
     try {
         m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name);
         if ( topic_id == 0 ) {
-            zsys_error ("topic '%s' was not inserted -> cannot insert metric", topic);
+            log_error ("topic '%s' was not inserted -> cannot insert metric", topic);
             return 1;
         }
         _row_cache.push_back(time,value,scale,topic_id);
         flush_measurement_when_needed(conn);
         return 0;
     } catch(const std::exception &e) {
-        zsys_error ("Metric with topic '%s' was not inserted with error: %s", topic, e.what());
+        log_error ("Metric with topic '%s' was not inserted with error: %s", topic, e.what());
         return 1;
     }
 }
@@ -345,10 +345,10 @@ int
             "   m.topic_id = mt.id AND "
             "   mt.topic like :name ");
         auto r = st.set("name", "%@" + std::string(asset_name)).execute();
-        zsys_info ("deleted: %d", r);
+        log_info ("deleted: %d", r);
         return 0;
     } catch(const std::exception &e) {
-        zsys_error ("Cannot delete measurements and topics: '%s'", e.what());
+        log_error ("Cannot delete measurements and topics: '%s'", e.what());
         return 1;
     }
 }

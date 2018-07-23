@@ -76,7 +76,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 
     if ( zmsg_size(msg) < 8 ) {
         zmsg_destroy (message_p);
-        zsys_error ("Message has unsupported format, ignore it");
+        log_error ("Message has unsupported format, ignore it");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         return msg_out;
@@ -85,7 +85,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     char *cmd = zmsg_popstr (msg);
     if ( !streq(cmd, "GET") ) {
         zmsg_destroy (message_p);
-        zsys_error ("GET is misssing");
+        log_error ("GET is misssing");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         return msg_out;
@@ -110,49 +110,49 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     int rv;
 
     if ( !asset_name || streq (asset_name, "") ) {
-        zsys_error ("asset name is empty");
+        log_error ("asset name is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !quantity || streq (quantity, "") ) {
-        zsys_error ("quantity is empty");
+        log_error ("quantity is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !step ) {
-        zsys_error ("step is empty");
+        log_error ("step is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !aggr_type ){
-        zsys_error ("type of the aggregaation is empty");
+        log_error ("type of the aggregaation is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !start_date_str ) {
-        zsys_error ("start date is empty");
+        log_error ("start date is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !end_date_str ) {
-        zsys_error ("end date is empty");
+        log_error ("end date is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( !ordered ) {
-        zsys_error ("ordered is empty");
+        log_error ("ordered is empty");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
@@ -161,7 +161,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     start_date = string_to_int64 (start_date_str);
     if (errno != 0) {
         errno = 0;
-        zsys_error ("start date cannot be converted to number");
+        log_error ("start date cannot be converted to number");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
@@ -170,21 +170,21 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     end_date = string_to_int64 (end_date_str);
     if (errno != 0) {
         errno = 0;
-        zsys_error ("end date cannot be converted to number");
+        log_error ("end date cannot be converted to number");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         goto exit;
     }
 
     if ( start_date > end_date ) {
-        zsys_error ("start date > end date");
+        log_error ("start date > end date");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_TIMERANGE");
         goto exit;
     }
 
     if ( !streq (ordered, "1") && !streq (ordered, "0") ) {
-        zsys_error ("ordered is not 1/0");
+        log_error ("ordered is not 1/0");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_ORDERED");
         goto exit;
@@ -208,10 +208,10 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         // as we have prepared it for SUCCESS, but we failed in the end
         zmsg_addstr (msg_out, "ERROR");
         if ( rv == -2 ) {
-            zsys_error ("average request: topic is not found");
+            log_error ("average request: topic is not found");
             zmsg_addstr (msg_out, "BAD_REQUEST");
         } else {
-            zsys_error ("average request: unexpected error during topic selecting");
+            log_error ("average request: unexpected error during topic selecting");
             zmsg_addstr (msg_out, "INTERNAL_ERROR");
         }
         goto exit;
@@ -247,7 +247,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     rv = select_measurements (url, topic, start_date, end_date, add_measurement, is_ordered);
     if ( rv ) {
         // as we have prepared it for SUCCESS, but we failed in the end
-        zsys_error ("unexpected error during measurement selecting");
+        log_error ("unexpected error during measurement selecting");
         zmsg_destroy (&msg_out);
         msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
@@ -272,7 +272,7 @@ s_handle_service (mlm_client_t *client, zmsg_t **message_p)
     assert (client);
     assert (message_p && *message_p);
 
-    zsys_error ("Service deliver is not implemented.");
+    log_error ("Service deliver is not implemented.");
 
     zmsg_destroy (message_p);
 }
@@ -286,7 +286,7 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
     zmsg_t *msg = *message_p;
 
     if (zmsg_size (msg) == 0) {
-        zsys_info ("Empty message with subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
+        log_info ("Empty message with subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
         zmsg_destroy (message_p);
     }
 
@@ -295,7 +295,7 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
     if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
         msg_out = s_handle_aggregate (client, message_p);
     } else {
-        zsys_info ("Bad subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
+        log_info ("Bad subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
         zmsg_destroy (message_p);
         msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
@@ -323,7 +323,7 @@ s_process_metric (fty_proto_t *m)
         value = string_to_int64 (fty_proto_value (m));
         if (errno != 0) {
             errno = 0;
-            zsys_error ("value '%s' of the metric is not integer", fty_proto_value (m) );
+            log_error ("value '%s' of the metric is not integer", fty_proto_value (m) );
             return;
         }
     }
@@ -331,7 +331,7 @@ s_process_metric (fty_proto_t *m)
         int8_t lscale = 0;
         int32_t integer = 0;
         if (!stobiosf_wrapper (fty_proto_value (m), integer, lscale)) {
-            zsys_error ("value '%s' of the metric is not double", fty_proto_value (m));
+            log_error ("value '%s' of the metric is not double", fty_proto_value (m));
             return;
         }
         value = integer;
@@ -345,7 +345,7 @@ s_process_metric (fty_proto_t *m)
         conn = tntdb::connectCached(url);
         conn.ping();
     } catch (const std::exception &e) {
-        zsys_error("Can't connect to the database");
+        log_error("Can't connect to the database");
         return;
     }
 
@@ -359,19 +359,19 @@ s_process_asset (fty_proto_t *m)
 {
     assert(m);
     if ( streq (fty_proto_operation (m), "delete") ) {
-        zsys_debug ("Asset is deleted -> delete all it measurements");
+        log_debug ("Asset is deleted -> delete all it measurements");
         tntdb::Connection conn;
         try {
             conn = tntdb::connectCached(url);
             conn.ping();
         } catch (const std::exception &e) {
-            zsys_error("Can't connect to the database");
+            log_error("Can't connect to the database");
             return;
         }
 
         delete_measurements (conn, fty_proto_name(m));
     } else {
-        zsys_debug ("Operation '%s' on the asset is not interesting", fty_proto_operation (m) );
+        log_debug ("Operation '%s' on the asset is not interesting", fty_proto_operation (m) );
     }
 }
 
@@ -383,7 +383,7 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
 
     fty_proto_t *m = fty_proto_decode (message_p);
     if ( !m ) {
-        zsys_error("Can't decode the fty_proto message, ignore it");
+        log_error("Can't decode the fty_proto message, ignore it");
         return;
     }
 
@@ -392,7 +392,7 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
     } else if ( fty_proto_id(m) == FTY_PROTO_ASSET ) {
         s_process_asset (m);
     } else {
-        zsys_error ("Unsupported fty_proto message with id = '%d'", fty_proto_id(m));
+        log_error ("Unsupported fty_proto message with id = '%d'", fty_proto_id(m));
     }
     fty_proto_destroy (&m);
     zmsg_destroy (message_p);
@@ -403,13 +403,13 @@ fty_metric_store_server (zsock_t *pipe, void* args)
 {
     mlm_client_t *client = mlm_client_new ();
     if (!client) {
-        zsys_error ("mlm_client_new () failed");
+        log_error ("mlm_client_new () failed");
         return;
     }
 
     zpoller_t *poller = zpoller_new (pipe, mlm_client_msgpipe (client), NULL);
     if (!poller) {
-        zsys_error ("zpoller_new () failed");
+        log_error ("zpoller_new () failed");
         mlm_client_destroy (&client);
         return;
     }
@@ -425,7 +425,7 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         if (now - last >= timeout) {
             last = now;
             //do a periodic flush
-            zsys_debug("Performing periodic flush");
+            log_debug("Performing periodic flush");
             flush_measurement_when_needed(url);
         }
         if (which == NULL) {
@@ -434,7 +434,7 @@ fty_metric_store_server (zsock_t *pipe, void* args)
             }
 
             if (zpoller_terminated (poller) || zsys_interrupted) {
-                zsys_warning ("zpoller_terminated () or zsys_interrupted");
+                log_warning ("zpoller_terminated () or zsys_interrupted");
                 break;
             }
             continue;
@@ -443,7 +443,7 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         if (which == pipe) {
             zmsg_t *message = zmsg_recv (pipe);
             if (!message) {
-                zsys_error ("Given `which == pipe`, function `zmsg_recv (pipe)` returned NULL");
+                log_error ("Given `which == pipe`, function `zmsg_recv (pipe)` returned NULL");
                 continue;
             }
             if (actor_commands (client, &message) == 1) {
@@ -454,13 +454,13 @@ fty_metric_store_server (zsock_t *pipe, void* args)
 
         // paranoid non-destructive assertion of a twisted mind
         if (which != mlm_client_msgpipe (client)) {
-            zsys_error ("which was checked for NULL, pipe and now should have been `mlm_client_msgpipe (client)` but is not.");
+            log_error ("which was checked for NULL, pipe and now should have been `mlm_client_msgpipe (client)` but is not.");
             continue;
         }
 
         zmsg_t *message = mlm_client_recv (client);
         if (!message) {
-            zsys_error ("Given `which == mlm_client_msgpipe (client)`, function `mlm_client_recv ()` returned NULL");
+            log_error ("Given `which == mlm_client_msgpipe (client)`, function `mlm_client_recv ()` returned NULL");
             continue;
         }
 
@@ -477,7 +477,7 @@ fty_metric_store_server (zsock_t *pipe, void* args)
             s_handle_service (client, &message);
         }
         else {
-            zsys_error ("Unrecognized mlm_client_command () = '%s'", command ? command : "(null)");
+            log_error ("Unrecognized mlm_client_command () = '%s'", command ? command : "(null)");
         }
 
         zmsg_destroy (&message);
@@ -497,17 +497,19 @@ fty_metric_store_server_test (bool verbose)
     static const char *endpoint = "inproc://malamute-test";
 
     printf (" * fty_metric_store_server: ");
+    ManageFtyLog::setInstanceFtylog("fty_metric_store_server");
 
     zactor_t *server = zactor_new (mlm_server, (void*) "Malamute");
     zstr_sendx (server, "BIND", endpoint, NULL);
-    if (verbose)
+    if (verbose) {
         zstr_send (server, "VERBOSE");
+        ManageFtyLog::getInstanceFtylog()->setVeboseMode();
+    }
 
     zactor_t *self = zactor_new (fty_metric_store_server, (void*) NULL);
     zstr_sendx (self, "CONNECT", endpoint, "fty-metric-store", NULL);
 
-    if (verbose)
-        printf ("Test for mailbox request error handling");
+    log_trace ("Test for mailbox request error handling");
     mlm_client_t *mbox_client = mlm_client_new();
     assert(mlm_client_connect(mbox_client, endpoint, 5000, "mbox-query") >= 0);
 

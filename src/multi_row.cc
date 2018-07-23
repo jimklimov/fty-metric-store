@@ -34,7 +34,7 @@ MultiRowCache::MultiRowCache (){
         int max_row = atoi(env_max_row);
         if( max_row<=0 ) _max_row = MAX_ROW_DEFAULT;
         else _max_row = (uint32_t)max_row;
-        zsys_info("use %s %d as max row insertion bulk limit",EV_DBSTORE_MAX_ROW,_max_row);
+        log_info("use %s %d as max row insertion bulk limit",EV_DBSTORE_MAX_ROW,_max_row);
     }
 
     _max_delay_s = MAX_DELAY_DEFAULT;
@@ -43,7 +43,7 @@ MultiRowCache::MultiRowCache (){
         int max_delay_s = atoi(env_max_delay);
         if( max_delay_s<=0 ) _max_delay_s = MAX_DELAY_DEFAULT;
         else _max_delay_s=(uint32_t)max_delay_s;
-        zsys_info("use %s %ds as max delay before multi row insertion",EV_DBSTORE_MAX_DELAY,_max_delay_s);
+        log_info("use %s %ds as max delay before multi row insertion",EV_DBSTORE_MAX_DELAY,_max_delay_s);
     }
 
 }
@@ -89,7 +89,7 @@ string
         if( ++value != _row_cache.end())query+=",";
     }
     query+=" ON DUPLICATE KEY UPDATE value=VALUES(value),scale=VALUES(scale) ";
-    zsys_debug("query %s",query.c_str());
+    log_debug("query %s",query.c_str());
     return query;
 }
 
@@ -108,6 +108,6 @@ long
 void
 multi_row_test (bool verbose)
 {
-    printf (" * actor_commands: Empty test - OK.");
+    printf (" * multi_row: Empty test - OK.\n");
 }
 

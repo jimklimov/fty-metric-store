@@ -13,7 +13,6 @@ lib_LTLIBRARIES += src/libfty_metric_store.la
 pkgconfig_DATA = src/libfty_metric_store.pc
 
 src_libfty_metric_store_la_SOURCES = \
-    src/logger.cc \
     src/actor_commands.cc \
     src/converter.cc \
     src/persistance.cc \
