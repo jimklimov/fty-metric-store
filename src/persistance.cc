@@ -243,7 +243,7 @@ m_msrmnt_tpc_id_t
 void
     flush_measurement(tntdb::Connection &conn)
 {
-    log_debug("flush_measurement");
+    log_debug("Performing periodic flush");
     try {
         tntdb::Statement st;
         string query = _row_cache.get_insert_query();
