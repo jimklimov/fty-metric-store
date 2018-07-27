@@ -425,7 +425,6 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         if (now - last >= timeout) {
             last = now;
             //do a periodic flush
-            log_debug("Performing periodic flush");
             flush_measurement_when_needed(url);
         }
         if (which == NULL) {

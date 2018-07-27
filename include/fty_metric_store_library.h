@@ -32,10 +32,10 @@
 //  External dependencies
 #include <czmq.h>
 #include <malamute.h>
+#include <fty_log.h>
 #include <ftyproto.h>
 #include <cxxtools/allocator.h>
 #include <tntdb.h>
-#include <fty_log.h>
 
 //  FTY_METRIC_STORE version macros for compile-time API detection
 #define FTY_METRIC_STORE_VERSION_MAJOR 1
