@@ -107,7 +107,7 @@ int main (int argc, char *argv [])
         return EXIT_FAILURE;
     }
     zstr_sendx (ms_server, "CONNECT", ENDPOINT, AGENT_NAME, NULL);
-    zstr_sendx (ms_server, "CONSUMER", FTY_PROTO_STREAM_METRICS, ".*", NULL);
+    //zstr_sendx (ms_server, "CONSUMER", FTY_PROTO_STREAM_METRICS, ".*", NULL);
     zstr_sendx (ms_server, "CONSUMER", FTY_PROTO_STREAM_ASSETS, ".*", NULL);
 
     // setup the storage age
