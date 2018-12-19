@@ -83,7 +83,8 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     }
 
     char *cmd = zmsg_popstr (msg);
-    if ( !streq(cmd, "GET") ) {
+    bool bTest=streq(cmd, "GET_TEST");
+    if ( !streq(cmd, "GET") && !bTest ) {
         zmsg_destroy (message_p);
         log_error ("GET is misssing");
         zmsg_addstr (msg_out, "ERROR");
@@ -187,6 +188,18 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         log_error ("ordered is not 1/0");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_ORDERED");
+        goto exit;
+    }
+
+    if ( bTest ) {
+        zmsg_addstr (msg_out, "OK");
+        zmsg_addstr (msg_out, asset_name);
+        zmsg_addstr (msg_out, quantity);
+        zmsg_addstr (msg_out, step);
+        zmsg_addstr (msg_out, aggr_type);
+        zmsg_addstr (msg_out, start_date_str);
+        zmsg_addstr (msg_out, end_date_str);
+        zmsg_addstr (msg_out, ordered);
         goto exit;
     }
 
@@ -593,7 +606,7 @@ fty_metric_store_server_test (bool verbose)
     static const char *uuid = "012345679";
     zmsg_t *msg = zmsg_new();
     zmsg_addstr (msg, uuid);
-    zmsg_addstr (msg, "GET");
+    zmsg_addstr (msg, "GET_TEST");
     zmsg_addstr (msg, "some-asset");
     zmsg_addstr (msg, "realpower.default");
     zmsg_addstr (msg, "15m");
@@ -601,13 +614,37 @@ fty_metric_store_server_test (bool verbose)
     zmsg_addstr (msg, "0");
     zmsg_addstr (msg, "9999");
     zmsg_addstr (msg, "1");
-    //  This will fail because either the database is not accessible or the
-    //  asset does not exist
+    //  we only test the mailbox REQ/RESP interface, no DB access
     assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);
     assert ((msg = mlm_client_recv (mbox_client)));
     char *received_uuid = zmsg_popstr (msg);
     assert (streq (uuid, received_uuid));
     zstr_free (&received_uuid);
+    char *result = zmsg_popstr (msg);
+    assert (result!=NULL && streq (result, "OK"));
+    zstr_free (&result);
+    char *asset = zmsg_popstr (msg);
+    assert (asset!=NULL && streq (asset, "some-asset"));
+    zstr_free (&asset);
+    char *quantity = zmsg_popstr (msg);
+    assert (quantity!=NULL && streq (quantity, "realpower.default"));
+    zstr_free (&quantity);
+    char *step = zmsg_popstr (msg);
+    assert (step!=NULL && streq (step, "15m"));
+    zstr_free (&step);
+    char *aggr_type = zmsg_popstr (msg);
+    assert (aggr_type!=NULL && streq (aggr_type, "min"));
+    zstr_free (&aggr_type);
+    char *start_date = zmsg_popstr (msg);
+    assert (start_date!=NULL && streq (start_date, "0"));
+    zstr_free (&start_date);
+    char *end_date = zmsg_popstr (msg);
+    assert (end_date!=NULL && streq (end_date, "9999"));
+    zstr_free (&end_date);
+    char *ordered = zmsg_popstr (msg);
+    assert (ordered!=NULL && streq (ordered, "1"));
+    zstr_free (&ordered);
+
     zmsg_print (msg);
     zmsg_destroy (&msg);
 
