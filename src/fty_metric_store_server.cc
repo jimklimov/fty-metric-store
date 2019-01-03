@@ -471,10 +471,10 @@ fty_metric_store_metric_pull (zsock_t *pipe, void* args)
   //int64_t timeCash = zclock_mono();
   while (!zsys_interrupted) {
       void *which = zpoller_wait (poller, timeout);
+      if (zpoller_terminated (poller) || zsys_interrupted) {
+        break;
+      }
       if (which == NULL) {
-        if (zpoller_terminated (poller) || zsys_interrupted) {
-            break;
-        }
         if (zpoller_expired (poller)) {
           fty::shm::shmMetrics result;
           log_debug("read metrics");
@@ -484,8 +484,24 @@ fty_metric_store_metric_pull (zsock_t *pipe, void* args)
         }
         timeout = fty_get_polling_interval() * 1000;
     }
+    if (which == pipe) {
+      zmsg_t *message = zmsg_recv (pipe);
+      if(message) {
+        char *cmd = zmsg_popstr (message);
+        if (cmd) {
+          if(streq (cmd, "$TERM")) {
+            zstr_free(&cmd);
+            zmsg_destroy(&message);
+            break;
+          }
+          zstr_free(&cmd);
+        }
+        zmsg_destroy(&message);
+      }
+    }
   }
   log_debug("quit puller");
+  zpoller_destroy(&poller);
 }
 
 void
@@ -572,9 +588,8 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         zmsg_destroy (&message);
     } // while (!zsys_interrupted)
     flush_measurement(url);
-
-    zpoller_destroy (&poller);
     zactor_destroy (&store_metrics_pull);
+    zpoller_destroy (&poller);
     mlm_client_destroy (&client);
 }
 
@@ -615,7 +630,7 @@ fty_metric_store_server_test (bool verbose)
     zmsg_addstr (msg, "9999");
     zmsg_addstr (msg, "1");
     //  we only test the mailbox REQ/RESP interface, no DB access
-    assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);
+    assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);    
     assert ((msg = mlm_client_recv (mbox_client)));
     char *received_uuid = zmsg_popstr (msg);
     assert (streq (uuid, received_uuid));
