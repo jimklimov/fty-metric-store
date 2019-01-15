@@ -478,7 +478,7 @@ fty_metric_store_metric_pull (zsock_t *pipe, void* args)
         if (zpoller_expired (poller)) {
           fty::shm::shmMetrics result;
           log_debug("read metrics");
-          fty::shm::read_metrics("metric", ".*", ".*",  result);
+          fty::shm::read_metrics(FTY_SHM_METRIC_TYPE, ".*", ".*",  result);
           log_debug("metric reads : %d", result.size());
           s_process_metrics(result);
         }
