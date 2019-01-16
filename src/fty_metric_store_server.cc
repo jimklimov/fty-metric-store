@@ -48,6 +48,9 @@
 */
 
 #include "fty_metric_store_classes.h"
+#include <mutex>
+
+std::mutex g_row_mutex;
 
 #define POLL_INTERVAL 1000
 
@@ -401,7 +404,9 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
     }
 
     if ( fty_proto_id(m) == FTY_PROTO_METRIC ) {
+        g_row_mutex.lock();
         s_process_metric (m);
+        g_row_mutex.unlock();
     } else if ( fty_proto_id(m) == FTY_PROTO_ASSET ) {
         s_process_asset (m);
     } else {
@@ -480,7 +485,9 @@ fty_metric_store_metric_pull (zsock_t *pipe, void* args)
           log_debug("read metrics");
           fty::shm::read_metrics(FTY_SHM_METRIC_TYPE, ".*", ".*",  result);
           log_debug("metric reads : %d", result.size());
+          g_row_mutex.lock();
           s_process_metrics(result);
+          g_row_mutex.unlock();
         }
         timeout = fty_get_polling_interval() * 1000;
     }
@@ -531,7 +538,9 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         if (now - last >= timeout) {
             last = now;
             //do a periodic flush
+            g_row_mutex.lock();
             flush_measurement_when_needed(url);
+            g_row_mutex.unlock();
         }
         if (which == NULL) {
             if (zpoller_expired (poller) && !zsys_interrupted ){
