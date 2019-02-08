@@ -426,6 +426,10 @@ s_process_metrics (fty::shm::shmMetrics& metrics)
     if (!fty_proto_aux_string (m, "x-cm-type", NULL)) {
         continue;
     }
+
+    if (fty_proto_aux_string (m, "x-ms-flag", NULL)) {
+      continue;
+    }
     std::string db_topic = std::string (fty_proto_type (m)) + "@" + std::string(fty_proto_name (m));
 
     m_msrmnt_value_t value = 0;
@@ -463,6 +467,14 @@ s_process_metrics (fty::shm::shmMetrics& metrics)
     insert_into_measurement(
             conn, db_topic.c_str(), value, scale, _time,
             fty_proto_unit (m), fty_proto_name (m));  
+
+    //insert OK : flag this metric
+    if ((fty_proto_time (m) + fty_proto_ttl (m)) <   time (NULL)) {
+      uint32_t new_ttl = fty_proto_ttl(m) - (time(NULL) - fty_proto_time(m));
+      fty_proto_set_ttl (m, new_ttl);
+      fty_proto_aux_insert(m, "x-ms-flag", "1");
+      fty::shm::write_metric(m);
+    }
   }
 }
 
