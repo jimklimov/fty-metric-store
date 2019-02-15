@@ -469,7 +469,7 @@ s_process_metrics (fty::shm::shmMetrics& metrics)
             fty_proto_unit (m), fty_proto_name (m));  
 
     //insert OK : flag this metric
-    if ((fty_proto_time (m) + fty_proto_ttl (m)) <   time (NULL)) {
+    if ((fty_proto_time (m) + fty_proto_ttl (m)) <   (uint64_t) time (NULL)) {
       uint32_t new_ttl = fty_proto_ttl(m) - (time(NULL) - fty_proto_time(m));
       fty_proto_set_ttl (m, new_ttl);
       fty_proto_aux_insert(m, "x-ms-flag", "1");
