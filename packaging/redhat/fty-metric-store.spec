@@ -60,6 +60,7 @@ BuildRequires:  fty-common-logging-devel
 BuildRequires:  fty-proto-devel
 BuildRequires:  cxxtools-devel
 BuildRequires:  tntdb-devel
+BuildRequires:  fty_shm-devel
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -93,6 +94,7 @@ Requires:       fty-common-logging-devel
 Requires:       fty-proto-devel
 Requires:       cxxtools-devel
 Requires:       tntdb-devel
+Requires:       fty_shm-devel
 
 %description devel
 persistance for metrics development tools

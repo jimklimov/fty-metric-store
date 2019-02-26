@@ -48,6 +48,9 @@
 */
 
 #include "fty_metric_store_classes.h"
+#include <mutex>
+
+std::mutex g_row_mutex;
 
 #define POLL_INTERVAL 1000
 
@@ -401,7 +404,9 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
     }
 
     if ( fty_proto_id(m) == FTY_PROTO_METRIC ) {
+        g_row_mutex.lock();
         s_process_metric (m);
+        g_row_mutex.unlock();
     } else if ( fty_proto_id(m) == FTY_PROTO_ASSET ) {
         s_process_asset (m);
     } else {
@@ -409,6 +414,113 @@ s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
     }
     fty_proto_destroy (&m);
     zmsg_destroy (message_p);
+}
+
+static void
+s_process_metrics (fty::shm::shmMetrics& metrics)
+{
+  for (auto &m : metrics) {
+    assert(m);
+    // TODO: implement FTY_STORE_AGE_ support
+    // ignore the stuff not coming from computation module
+    if (!fty_proto_aux_string (m, "x-cm-type", NULL)) {
+        continue;
+    }
+
+    if (fty_proto_aux_string (m, "x-ms-flag", NULL)) {
+      continue;
+    }
+    std::string db_topic = std::string (fty_proto_type (m)) + "@" + std::string(fty_proto_name (m));
+
+    m_msrmnt_value_t value = 0;
+    m_msrmnt_scale_t scale = 0;
+    if (!strstr (fty_proto_value (m), ".")) {
+        value = string_to_int64 (fty_proto_value (m));
+        if (errno != 0) {
+            errno = 0;
+            log_error ("value '%s' of the metric is not integer", fty_proto_value (m) );
+            continue;
+        }
+    }
+    else {
+        int8_t lscale = 0;
+        int32_t integer = 0;
+        if (!stobiosf_wrapper (fty_proto_value (m), integer, lscale)) {
+            log_error ("value '%s' of the metric is not double", fty_proto_value (m));
+            continue;
+        }
+        value = integer;
+        scale = lscale;
+    }
+
+    // time is a time when message was received
+    uint64_t _time = fty_proto_time (m);
+    tntdb::Connection conn;
+    try {
+        conn = tntdb::connectCached(url);
+        conn.ping();
+    } catch (const std::exception &e) {
+        log_error("Can't connect to the database");
+        continue;
+    }
+
+    insert_into_measurement(
+            conn, db_topic.c_str(), value, scale, _time,
+            fty_proto_unit (m), fty_proto_name (m));  
+
+    //insert OK : flag this metric
+    if ((fty_proto_time (m) + fty_proto_ttl (m)) <   (uint64_t) time (NULL)) {
+      uint32_t new_ttl = fty_proto_ttl(m) - (time(NULL) - fty_proto_time(m));
+      fty_proto_set_ttl (m, new_ttl);
+      fty_proto_aux_insert(m, "x-ms-flag", "1");
+      fty::shm::write_metric(m);
+    }
+  }
+}
+
+void
+fty_metric_store_metric_pull (zsock_t *pipe, void* args)
+{
+   zpoller_t *poller = zpoller_new (pipe, NULL);
+  zsock_signal (pipe, 0);
+
+  uint64_t timeout = fty_get_polling_interval() * 1000;
+  //int64_t timeCash = zclock_mono();
+  while (!zsys_interrupted) {
+      void *which = zpoller_wait (poller, timeout);
+      if (zpoller_terminated (poller) || zsys_interrupted) {
+        break;
+      }
+      if (which == NULL) {
+        if (zpoller_expired (poller)) {
+          fty::shm::shmMetrics result;
+          log_debug("read metrics");
+          fty::shm::read_metrics(".*", ".*",  result);
+          log_debug("metric reads : %d", result.size());
+          g_row_mutex.lock();
+          s_process_metrics(result);
+          g_row_mutex.unlock();
+        }
+        timeout = fty_get_polling_interval() * 1000;
+    }
+    if (which == pipe) {
+      zmsg_t *message = zmsg_recv (pipe);
+      if(message) {
+        char *cmd = zmsg_popstr (message);
+        if (cmd) {
+          if(streq (cmd, "$TERM")) {
+            zstr_free(&cmd);
+            zmsg_destroy(&message);
+            break;
+          }
+          zstr_free(&cmd);
+        }
+        zmsg_destroy(&message);
+      }
+    }
+  }
+  log_debug("quit puller");
+  zpoller_destroy(&poller);
 }
 
 void
@@ -430,7 +542,7 @@ fty_metric_store_server (zsock_t *pipe, void* args)
     zsock_signal (pipe, 0);
 
     uint64_t timeout = (uint64_t) POLL_INTERVAL;
-
+    zactor_t *store_metrics_pull = zactor_new (fty_metric_store_metric_pull, (void*) NULL);
     uint64_t last = zclock_mono ();
     while (!zsys_interrupted) {
         void *which = zpoller_wait (poller, timeout);
@@ -438,7 +550,9 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         if (now - last >= timeout) {
             last = now;
             //do a periodic flush
+            g_row_mutex.lock();
             flush_measurement_when_needed(url);
+            g_row_mutex.unlock();
         }
         if (which == NULL) {
             if (zpoller_expired (poller) && !zsys_interrupted ){
@@ -495,7 +609,7 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         zmsg_destroy (&message);
     } // while (!zsys_interrupted)
     flush_measurement(url);
-
+    zactor_destroy (&store_metrics_pull);
     zpoller_destroy (&poller);
     mlm_client_destroy (&client);
 }
@@ -537,7 +651,7 @@ fty_metric_store_server_test (bool verbose)
     zmsg_addstr (msg, "9999");
     zmsg_addstr (msg, "1");
     //  we only test the mailbox REQ/RESP interface, no DB access
-    assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);
+    assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);    
     assert ((msg = mlm_client_recv (mbox_client)));
     char *received_uuid = zmsg_popstr (msg);
     assert (streq (uuid, received_uuid));
