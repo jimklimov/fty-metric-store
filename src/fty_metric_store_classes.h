@@ -32,8 +32,6 @@
 //  External API
 #include "../include/fty_metric_store.h"
 
-//  Extra headers
-
 //  Opaque class structures to allow forward references
 #ifndef ACTOR_COMMANDS_T_DEFINED
 typedef struct _actor_commands_t actor_commands_t;
@@ -51,6 +49,8 @@ typedef struct _persistance_t persistance_t;
 typedef struct _multi_row_t multi_row_t;
 #define MULTI_ROW_T_DEFINED
 #endif
+
+//  Extra headers
 
 //  Internal API
 
