@@ -40,7 +40,7 @@ using namespace std;
 class MultiRowCache {
     public:
         MultiRowCache ();
-        MultiRowCache ( const uint32_t max_row,const uint32_t max_delay_s )
+        MultiRowCache (const uint32_t max_row, const uint32_t max_delay_s)
         {
             _max_row = max_row;
             _max_delay_s = max_delay_s;
@@ -50,7 +50,7 @@ class MultiRowCache {
             int64_t time,
             m_msrmnt_value_t value,
             m_msrmnt_scale_t scale,
-            m_msrmnt_tpc_id_t topic_id );
+            m_msrmnt_tpc_id_t topic_id);
 
         /*
          * \brief check one of those conditions :
@@ -61,12 +61,11 @@ class MultiRowCache {
 
         string get_insert_query();
 
-        void clear(){_row_cache.clear(); reset_clock();}
-        void reset_clock(){_first_ms = get_clock_ms();}
+        void clear() { _row_cache.clear(); reset_clock(); }
+        void reset_clock() { _first_ms = get_clock_ms(); }
 
-        int get_max_row(){return _max_row;}
-
-        int get_max_delay(){return _max_delay_s;}
+        int get_max_row() { return _max_row; }
+        int get_max_delay() { return _max_delay_s; }
 
 
     private:

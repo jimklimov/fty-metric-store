@@ -35,13 +35,12 @@ using namespace std;
  *  TODO: if DB_USER or DB_PASSWD would be changed the daemon
  *          should be restarted in order to apply changes
  */
+
 static std::string url =
     std::string("mysql:db=box_utf8;user=") +
     ((getenv("DB_USER")   == NULL) ? "root" : getenv("DB_USER")) +
     ((getenv("DB_PASSWD") == NULL) ? ""     :
     std::string(";password=") + getenv("DB_PASSWD"));
-
-
 
 long get_clock_ms(){
     struct timeval time;
@@ -56,7 +55,7 @@ char *get_clock_fmt(){
     time(&timer);
     tm_info = localtime(&timer);
     strftime(clock_fmt, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-    return clock_fmt;
+    return clock_fmt; // ZZZ global ref
 }
 
 /* Insert one measurement on a random device, a random topic and a random value
@@ -71,14 +70,15 @@ void insert_new_measurement(
     char topic_name[32];
     char device_name[32];
 
-    sprintf(device_name,"bench.asset%d",device_id);
-    sprintf(topic_name,"bench.topic%d@%s",topic_id,device_name);
+    snprintf(device_name,32,"bench.asset%d",device_id);
+    snprintf(topic_name,32,"bench.topic%d@%s",topic_id,device_name);
 
     insert_into_measurement(
             conn, topic_name, rand() % 999999, 0, time(NULL),
             "%", device_name);
 
 }
+
 /*
  * do the bench insertion
  * \param delay       - pause between each insertion (in ms), 0 means no delay

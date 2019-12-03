@@ -50,53 +50,57 @@
 #include "fty_metric_store_classes.h"
 #include <mutex>
 
-std::mutex g_row_mutex;
+static std::mutex g_row_mutex;
 
 #define POLL_INTERVAL 1000
-
 #define AVG_GRAPH "aggregated data"
+
 /**
  *  \brief A connection string to the database
  *
  *  TODO: if DB_USER or DB_PASSWD would be changed the daemon
  *          should be restarted in order to apply changes
  */
+
 static std::string url =
     std::string("mysql:db=box_utf8;user=") +
     ((getenv("DB_USER")   == NULL) ? "root" : getenv("DB_USER")) +
     ((getenv("DB_PASSWD") == NULL) ? ""     :
     std::string(";password=") + getenv("DB_PASSWD"));
 
-// destroys the message
 static zmsg_t*
-s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
+s_process_mailbox_aggregate (mlm_client_t *client, zmsg_t **message_p)
 {
     assert (client);
     assert (message_p && *message_p);
 
-    zmsg_t *msg = *message_p;
     zmsg_t *msg_out = zmsg_new ();
+    if (!msg_out) {
+        log_error ("zmsg_new () failed");
+        return NULL;
+    }
 
-    if ( zmsg_size(msg) < 8 ) {
-        zmsg_destroy (message_p);
+    zmsg_t *msg = *message_p;
+
+    if (zmsg_size(msg) < 8) {
         log_error ("Message has unsupported format, ignore it");
+        zmsg_destroy (message_p);
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         return msg_out;
     }
 
     char *cmd = zmsg_popstr (msg);
-    bool bTest=streq(cmd, "GET_TEST");
-    if ( !streq(cmd, "GET") && !bTest ) {
+    if (!cmd || (!streq(cmd, "GET") && !streq(cmd, "GET_TEST"))) {
+        log_error ("GET command is missing (cmd: %s)", cmd);
         zmsg_destroy (message_p);
-        log_error ("GET is misssing");
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "BAD_MESSAGE");
         return msg_out;
     }
-    zstr_free(&cmd);
+    bool bTest = streq(cmd, "GET_TEST");
+
     // All declarations are before first "goto"
-    // to make compiler happy
     char *asset_name = zmsg_popstr (msg);
     char *quantity = zmsg_popstr (msg);
     char *step = zmsg_popstr (msg);
@@ -104,6 +108,7 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     char *start_date_str = zmsg_popstr (msg);
     char *end_date_str = zmsg_popstr (msg);
     char *ordered = zmsg_popstr (msg);
+
     bool is_ordered = false;
     int64_t start_date = 0;
     int64_t end_date = 0;
@@ -113,85 +118,59 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
     std::string units;
     int rv;
 
-    if ( !asset_name || streq (asset_name, "") ) {
+    #define ERROR_MSG_EXIT(REASON) { \
+        zmsg_addstr (msg_out, "ERROR"); \
+        zmsg_addstr (msg_out, REASON); \
+        goto exit; \
+    }
+
+    if (!asset_name || streq (asset_name, "")) {
         log_error ("asset name is empty");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
-    if ( !quantity || streq (quantity, "") ) {
+    if (!quantity || streq (quantity, "")) {
         log_error ("quantity is empty");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
-    if ( !step ) {
+    if (!step) {
         log_error ("step is empty");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
-    if ( !aggr_type ){
+    if (!aggr_type){
         log_error ("type of the aggregaation is empty");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
-    if ( !start_date_str ) {
+    if (!start_date_str) {
         log_error ("start date is empty");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
-    if ( !end_date_str ) {
+    if (!end_date_str) {
         log_error ("end date is empty");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
-    if ( !ordered ) {
+    if (!ordered) {
         log_error ("ordered is empty");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
     start_date = string_to_int64 (start_date_str);
     if (errno != 0) {
         errno = 0;
         log_error ("start date cannot be converted to number");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
     end_date = string_to_int64 (end_date_str);
     if (errno != 0) {
         errno = 0;
         log_error ("end date cannot be converted to number");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_MESSAGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_MESSAGE");
     }
-
-    if ( start_date > end_date ) {
+    if (start_date > end_date) {
         log_error ("start date > end date");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_TIMERANGE");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_TIMERANGE");
     }
-
-    if ( !streq (ordered, "1") && !streq (ordered, "0") ) {
+    if (!streq (ordered, "1") && !streq (ordered, "0")) {
         log_error ("ordered is not 1/0");
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "BAD_ORDERED");
-        goto exit;
+        ERROR_MSG_EXIT("BAD_ORDERED");
     }
 
     if ( bTest ) {
@@ -220,13 +199,14 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
         };
 
     rv = select_topic (url, topic, select_units);
-    if ( rv ) {
+    if (rv != 0) {
         // as we have prepared it for SUCCESS, but we failed in the end
         zmsg_addstr (msg_out, "ERROR");
-        if ( rv == -2 ) {
+        if (rv == -2) {
             log_error ("average request: topic is not found");
             zmsg_addstr (msg_out, "BAD_REQUEST");
-        } else {
+        }
+        else {
             log_error ("average request: unexpected error during topic selecting");
             zmsg_addstr (msg_out, "INTERNAL_ERROR");
         }
@@ -261,14 +241,15 @@ s_handle_aggregate (mlm_client_t *client, zmsg_t **message_p)
 
     is_ordered = streq (ordered, "1");
     rv = select_measurements (url, topic, start_date, end_date, add_measurement, is_ordered);
-    if ( rv ) {
+    if (rv != 0) {
         // as we have prepared it for SUCCESS, but we failed in the end
         log_error ("unexpected error during measurement selecting");
         zmsg_destroy (&msg_out);
         msg_out = zmsg_new ();
-        zmsg_addstr (msg_out, "ERROR");
-        zmsg_addstr (msg_out, "INTERNAL_ERROR");
+        ERROR_MSG_EXIT("INTERNAL_ERROR");
     }
+
+    #undef ERROR_MSG_EXIT
 
 exit:
     zstr_free (&ordered);
@@ -278,20 +259,26 @@ exit:
     zstr_free (&step);
     zstr_free (&quantity);
     zstr_free (&asset_name);
+    zstr_free (&cmd);
     zmsg_destroy (message_p);
+
     return msg_out;
 }
 
-static void
-s_handle_service (mlm_client_t *client, zmsg_t **message_p)
-{
-    assert (client);
-    assert (message_p && *message_p);
+//
+// SERVICE DELIVER processing
+//
 
-    log_error ("Service deliver is not implemented.");
+//static void s_handle_service (mlm_client_t *client, zmsg_t **message_p)
+//{
+//    assert (client && message_p && *message_p);
+//    log_error ("Service deliver is not implemented.");
+//    zmsg_destroy (message_p);
+//}
 
-    zmsg_destroy (message_p);
-}
+//
+// MAILBOX DELIVER processing
+//
 
 static void
 s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
@@ -299,38 +286,55 @@ s_handle_mailbox (mlm_client_t *client, zmsg_t **message_p)
     assert (client);
     assert (message_p && *message_p);
 
-    zmsg_t *msg = *message_p;
+    const char *sender = mlm_client_sender (client);
+    const char *subject = mlm_client_subject (client);
+    log_trace("IN handle MAILBOX DELIVER (subject %s from %s)", subject, sender);
 
-    if (zmsg_size (msg) == 0) {
-        log_info ("Empty message with subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
+    if (zmsg_size (*message_p) == 0) {
+        log_error ("Empty message with subject %s from %s, ignoring", subject, sender);
         zmsg_destroy (message_p);
+        return;
     }
 
-    zmsg_t *msg_out;
-    char *uuid = zmsg_popstr (msg);
-    if ( streq ( mlm_client_subject (client), AVG_GRAPH ) ) {
-        msg_out = s_handle_aggregate (client, message_p);
-    } else {
-        log_info ("Bad subject %s from %s, ignoring", mlm_client_subject (client), mlm_client_sender (client));
-        zmsg_destroy (message_p);
+    char *uuid = zmsg_popstr (*message_p);
+
+    zmsg_t *msg_out = NULL;
+    if (streq (subject, AVG_GRAPH)) {
+        msg_out = s_process_mailbox_aggregate (client, message_p);
+    }
+    else {
+        log_error ("Bad subject %s from %s, ignoring", subject, sender);
         msg_out = zmsg_new ();
         zmsg_addstr (msg_out, "ERROR");
         zmsg_addstr (msg_out, "UNSUPPORTED_SUBJECT");
     }
-    zmsg_pushstr (msg_out, uuid);
+
+    if (msg_out) {
+        zmsg_pushstr (msg_out, uuid);
+        mlm_client_sendto (client, sender, subject, NULL, 1000, &msg_out);
+    }
+
+    zmsg_destroy (&msg_out);
     zstr_free (&uuid);
-    mlm_client_sendto (client, mlm_client_sender(client), mlm_client_subject(client), NULL, 1000, &msg_out);
+    zmsg_destroy (message_p);
 }
 
+//
+// STREAM DELIVER processing
+//
+
 static void
-s_process_metric (fty_proto_t *m)
+s_process_stream_proto_metric (fty_proto_t *m)
 {
-    assert(m);
+    assert (m);
+    assert (fty_proto_id(m) == FTY_PROTO_METRIC);
+
     // TODO: implement FTY_STORE_AGE_ support
     // ignore the stuff not coming from computation module
     if (!fty_proto_aux_string (m, "x-cm-type", NULL)) {
         return;
     }
+
     std::string db_topic = std::string (fty_proto_type (m)) + "@" + std::string(fty_proto_name (m));
 
     m_msrmnt_value_t value = 0;
@@ -354,8 +358,7 @@ s_process_metric (fty_proto_t *m)
         scale = lscale;
     }
 
-    // time is a time when message was received
-    uint64_t _time = fty_proto_time (m);
+    // connect & test db
     tntdb::Connection conn;
     try {
         conn = tntdb::connectCached(url);
@@ -365,17 +368,22 @@ s_process_metric (fty_proto_t *m)
         return;
     }
 
+    // time is a time when message was received
+    uint64_t _time = fty_proto_time (m);
     insert_into_measurement(
-            conn, db_topic.c_str(), value, scale, _time,
-            fty_proto_unit (m), fty_proto_name (m));
+        conn, db_topic.c_str(), value, scale, _time,
+        fty_proto_unit (m), fty_proto_name (m));
 }
 
 static void
-s_process_asset (fty_proto_t *m)
+s_process_stream_proto_asset (fty_proto_t *m)
 {
-    assert(m);
-    if ( streq (fty_proto_operation (m), "delete") ) {
-        log_debug ("Asset is deleted -> delete all it measurements");
+    assert (m);
+    assert (fty_proto_id(m) == FTY_PROTO_ASSET);
+
+    if (streq (fty_proto_operation (m), "delete")) {
+        log_debug ("Asset '%s' is deleted -> delete all it measurements", fty_proto_name(m));
+
         tntdb::Connection conn;
         try {
             conn = tntdb::connectCached(url);
@@ -386,142 +394,164 @@ s_process_asset (fty_proto_t *m)
         }
 
         delete_measurements (conn, fty_proto_name(m));
-    } else {
-        log_debug ("Operation '%s' on the asset is not interesting", fty_proto_operation (m) );
+    }
+    else {
+        log_debug ("Ignore operation '%s' on the asset '%s'", fty_proto_operation(m), fty_proto_name(m));
     }
 }
 
 static void
 s_handle_stream (mlm_client_t *client, zmsg_t **message_p)
 {
-    assert (client);
+    assert (client);//notUsed
     assert (message_p && *message_p);
+    log_trace("IN handle STREAM DELIVER");
 
     fty_proto_t *m = fty_proto_decode (message_p);
-    if ( !m ) {
-        log_error("Can't decode the fty_proto message, ignore it");
-        return;
-    }
 
-    if ( fty_proto_id(m) == FTY_PROTO_METRIC ) {
+    if (!m) {
+        log_error("Can't decode the fty_proto message, ignore it");
+    }
+    else if (fty_proto_id(m) == FTY_PROTO_METRIC) {
         g_row_mutex.lock();
-        s_process_metric (m);
+        s_process_stream_proto_metric (m);
         g_row_mutex.unlock();
-    } else if ( fty_proto_id(m) == FTY_PROTO_ASSET ) {
-        s_process_asset (m);
-    } else {
+    }
+    else if (fty_proto_id(m) == FTY_PROTO_ASSET) {
+        s_process_stream_proto_asset (m);
+    }
+    else {
         log_error ("Unsupported fty_proto message with id = '%d'", fty_proto_id(m));
     }
+
     fty_proto_destroy (&m);
     zmsg_destroy (message_p);
 }
 
+//
+// fty_metric_store pull actor, to store metrics from shm to db
+//
+
 static void
-s_process_metrics (fty::shm::shmMetrics& metrics)
+s_process_pull_store_shm_metrics (fty::shm::shmMetrics& metrics)
 {
-  for (auto &m : metrics) {
-    assert(m);
-    // TODO: implement FTY_STORE_AGE_ support
-    // ignore the stuff not coming from computation module
-    if (!fty_proto_aux_string (m, "x-cm-type", NULL)) {
-        continue;
-    }
+    for (auto &m : metrics) {
+        assert(m);
+        // TODO: implement FTY_STORE_AGE_ support
 
-    if (fty_proto_aux_string (m, "x-ms-flag", NULL)) {
-      continue;
-    }
-    std::string db_topic = std::string (fty_proto_type (m)) + "@" + std::string(fty_proto_name (m));
+        // ignore stuff not coming from computation module
+        if (!fty_proto_aux_string (m, "x-cm-type", NULL))
+            continue;
+        // ignore flagged metric
+        if (fty_proto_aux_string (m, "x-ms-flag", NULL))
+            continue;
 
-    m_msrmnt_value_t value = 0;
-    m_msrmnt_scale_t scale = 0;
-    if (!strstr (fty_proto_value (m), ".")) {
-        value = string_to_int64 (fty_proto_value (m));
-        if (errno != 0) {
-            errno = 0;
-            log_error ("value '%s' of the metric is not integer", fty_proto_value (m) );
+        std::string db_topic = std::string (fty_proto_type (m)) + "@" + std::string(fty_proto_name (m));
+
+        m_msrmnt_value_t value = 0;
+        m_msrmnt_scale_t scale = 0;
+        if (!strstr (fty_proto_value (m), ".")) {
+            value = string_to_int64 (fty_proto_value (m));
+            if (errno != 0) {
+                errno = 0;
+                log_error ("value '%s' of the metric is not integer", fty_proto_value (m) );
+                continue;
+            }
+        }
+        else {
+            int8_t lscale = 0;
+            int32_t lvalue = 0;
+            if (!stobiosf_wrapper (fty_proto_value (m), lvalue, lscale)) {
+                log_error ("value '%s' of the metric is not double", fty_proto_value (m));
+                continue;
+            }
+            value = lvalue;
+            scale = lscale;
+        }
+
+        // connect & test db
+        tntdb::Connection conn;
+        try {
+            conn = tntdb::connectCached(url);
+            conn.ping();
+        } catch (const std::exception &e) {
+            log_error("Can't connect to the database");
             continue;
         }
-    }
-    else {
-        int8_t lscale = 0;
-        int32_t integer = 0;
-        if (!stobiosf_wrapper (fty_proto_value (m), integer, lscale)) {
-            log_error ("value '%s' of the metric is not double", fty_proto_value (m));
-            continue;
-        }
-        value = integer;
-        scale = lscale;
-    }
 
-    // time is a time when message was received
-    uint64_t _time = fty_proto_time (m);
-    tntdb::Connection conn;
-    try {
-        conn = tntdb::connectCached(url);
-        conn.ping();
-    } catch (const std::exception &e) {
-        log_error("Can't connect to the database");
-        continue;
-    }
-
-    insert_into_measurement(
+        // time is a time when message was received
+        uint64_t _time = fty_proto_time (m);
+        insert_into_measurement(
             conn, db_topic.c_str(), value, scale, _time,
-            fty_proto_unit (m), fty_proto_name (m));  
+            fty_proto_unit (m), fty_proto_name (m));
 
-    //insert OK : flag this metric
-    if ((fty_proto_time (m) + fty_proto_ttl (m)) <   (uint64_t) time (NULL)) {
-      uint32_t new_ttl = fty_proto_ttl(m) - (time(NULL) - fty_proto_time(m));
-      fty_proto_set_ttl (m, new_ttl);
-      fty_proto_aux_insert(m, "x-ms-flag", "1");
-      fty::shm::write_metric(m);
+        // inserted, flag this metric
+        if ((fty_proto_time (m) + fty_proto_ttl (m)) < (uint64_t) time (NULL)) {
+            uint32_t new_ttl = fty_proto_ttl(m) - (time(NULL) - fty_proto_time(m));
+            fty_proto_set_ttl (m, new_ttl);
+            fty_proto_aux_insert(m, "x-ms-flag", "1");
+            fty::shm::write_metric(m);
+        }
     }
-  }
 }
 
 void
 fty_metric_store_metric_pull (zsock_t *pipe, void* args)
 {
-   zpoller_t *poller = zpoller_new (pipe, NULL);
-  zsock_signal (pipe, 0);
+    assert(pipe);
+    zpoller_t *poller = zpoller_new (pipe, NULL);
+    assert(poller);
 
-  uint64_t timeout = fty_get_polling_interval() * 1000;
-  //int64_t timeCash = zclock_mono();
-  while (!zsys_interrupted) {
-      void *which = zpoller_wait (poller, timeout);
-      if (zpoller_terminated (poller) || zsys_interrupted) {
-        break;
-      }
-      if (which == NULL) {
-        if (zpoller_expired (poller)) {
-          fty::shm::shmMetrics result;
-          log_debug("read metrics");
-          fty::shm::read_metrics(".*", ".*",  result);
-          log_debug("metric reads : %d", result.size());
-          g_row_mutex.lock();
-          s_process_metrics(result);
-          g_row_mutex.unlock();
+    log_info("fty_metric_store_metric_pull started");
+    zsock_signal (pipe, 0);
+
+    uint64_t timeout = fty_get_polling_interval() * 1000;
+    while (!zsys_interrupted)
+    {
+        void *which = zpoller_wait (poller, timeout);
+
+        if (which == NULL) {
+            if (zpoller_terminated (poller) || zsys_interrupted) {
+                break;
+            }
+
+            if (zpoller_expired (poller)) {
+                log_debug("read metrics from shm");
+                fty::shm::shmMetrics result;
+                fty::shm::read_metrics(".*", ".*",  result);
+                log_debug("metric reads : %d", result.size());
+
+                g_row_mutex.lock();
+                s_process_pull_store_shm_metrics(result);
+                g_row_mutex.unlock();
+            }
+            timeout = fty_get_polling_interval() * 1000;
+            continue;
         }
-        timeout = fty_get_polling_interval() * 1000;
-    }
-    if (which == pipe) {
-      zmsg_t *message = zmsg_recv (pipe);
-      if(message) {
-        char *cmd = zmsg_popstr (message);
-        if (cmd) {
-          if(streq (cmd, "$TERM")) {
-            zstr_free(&cmd);
-            zmsg_destroy(&message);
-            break;
-          }
-          zstr_free(&cmd);
+
+        if (which == pipe) {
+            zmsg_t *message = zmsg_recv (pipe);
+            if (message) {
+                char *cmd = zmsg_popstr (message);
+                if (cmd && streq (cmd, "$TERM")) {
+                    zstr_free (&cmd);
+                    zmsg_destroy (&message);
+                    break;
+                }
+                zstr_free (&cmd);
+            }
+            zmsg_destroy (&message);
+            continue;
         }
-        zmsg_destroy(&message);
-      }
     }
-  }
-  log_debug("quit puller");
-  zpoller_destroy(&poller);
+
+    zpoller_destroy(&poller);
+    log_info("fty_metric_store_metric_pull stopped");
 }
+
+//
+// fty_metric_store main actor
+//
 
 void
 fty_metric_store_server (zsock_t *pipe, void* args)
@@ -539,23 +569,35 @@ fty_metric_store_server (zsock_t *pipe, void* args)
         return;
     }
 
+    zactor_t *store_metrics_pull = zactor_new (fty_metric_store_metric_pull, (void*) NULL);
+    if (!store_metrics_pull) {
+        log_error ("zactor_new () failed");
+        zpoller_destroy (&poller);
+        mlm_client_destroy (&client);
+        return;
+    }
+
+    log_info("fty_metric_store_server started");
     zsock_signal (pipe, 0);
 
-    uint64_t timeout = (uint64_t) POLL_INTERVAL;
-    zactor_t *store_metrics_pull = zactor_new (fty_metric_store_metric_pull, (void*) NULL);
+    const uint64_t timeout = (uint64_t) POLL_INTERVAL;
     uint64_t last = zclock_mono ();
-    while (!zsys_interrupted) {
-        void *which = zpoller_wait (poller, timeout);
+
+    while (!zsys_interrupted)
+    {
         uint64_t now = zclock_mono();
-        if (now - last >= timeout) {
+        if ((now - last) >= timeout) {
             last = now;
-            //do a periodic flush
+            // do a periodic flush
             g_row_mutex.lock();
             flush_measurement_when_needed(url);
             g_row_mutex.unlock();
         }
+
+        void *which = zpoller_wait (poller, timeout);
+
         if (which == NULL) {
-            if (zpoller_expired (poller) && !zsys_interrupted ){
+            if (zpoller_expired (poller) && !zsys_interrupted) {
                 continue;
             }
 
@@ -572,46 +614,56 @@ fty_metric_store_server (zsock_t *pipe, void* args)
                 log_error ("Given `which == pipe`, function `zmsg_recv (pipe)` returned NULL");
                 continue;
             }
-            if (actor_commands (client, &message) == 1) {
-                break;
+            int rv = actor_commands (client, &message);
+            zmsg_destroy (&message);
+
+            if (rv == 1)
+                break; // rx $TERM
+            continue;
+        }
+
+        if (which == mlm_client_msgpipe (client)) {
+            zmsg_t *message = mlm_client_recv (client);
+            const char *command = mlm_client_command (client);
+
+            if (!message) {
+                log_error ("mlm_client_recv () returns NULL");
             }
+            else if (!command) {
+                log_error ("mlm_client_command () returns NULL");
+            }
+            else {
+                log_debug("fty_metric_store_server received command '%s'", command);
+
+                if (streq (command, "STREAM DELIVER")) {
+                    s_handle_stream (client, &message);
+                }
+                else if (streq (command, "MAILBOX DELIVER")) {
+                    s_handle_mailbox (client, &message);
+                }
+                //else if (streq (command, "SERVICE DELIVER")) {
+                //    s_handle_service (client, &message);
+                //}
+                else {
+                    log_error ("Unrecognized mlm_client_command () = '%s'", command);
+                }
+            }
+
+            zmsg_destroy (&message);
             continue;
         }
 
-        // paranoid non-destructive assertion of a twisted mind
-        if (which != mlm_client_msgpipe (client)) {
-            log_error ("which was checked for NULL, pipe and now should have been `mlm_client_msgpipe (client)` but is not.");
-            continue;
-        }
+        // paranoid assertion of a twisted mind
+        log_warning ("which was checked for NULL, pipe and `mlm_client_msgpipe (client)` but is not.");
+    }//while
 
-        zmsg_t *message = mlm_client_recv (client);
-        if (!message) {
-            log_error ("Given `which == mlm_client_msgpipe (client)`, function `mlm_client_recv ()` returned NULL");
-            continue;
-        }
-
-        const char *command = mlm_client_command (client);
-        if (streq (command, "STREAM DELIVER")) {
-            s_handle_stream (client, &message);
-        }
-        else
-        if (streq (command, "MAILBOX DELIVER")) {
-            s_handle_mailbox (client, &message);
-        }
-        else
-        if (streq (command, "SERVICE DELIVER")) {
-            s_handle_service (client, &message);
-        }
-        else {
-            log_error ("Unrecognized mlm_client_command () = '%s'", command ? command : "(null)");
-        }
-
-        zmsg_destroy (&message);
-    } // while (!zsys_interrupted)
     flush_measurement(url);
+
     zactor_destroy (&store_metrics_pull);
     zpoller_destroy (&poller);
     mlm_client_destroy (&client);
+
+    log_info("fty_metric_store_server stopped");
 }
 
 //  --------------------------------------------------------------------------
@@ -651,7 +703,7 @@ fty_metric_store_server_test (bool verbose)
     zmsg_addstr (msg, "9999");
     zmsg_addstr (msg, "1");
     //  we only test the mailbox REQ/RESP interface, no DB access
-    assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);    
+    assert (mlm_client_sendto (mbox_client, "fty-metric-store", AVG_GRAPH, NULL, 1000, &msg) >= 0);
     assert ((msg = mlm_client_recv (mbox_client)));
     char *received_uuid = zmsg_popstr (msg);
     assert (streq (uuid, received_uuid));
