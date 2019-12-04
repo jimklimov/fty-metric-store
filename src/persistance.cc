@@ -28,7 +28,7 @@
 
 #include "fty_metric_store_classes.h"
 
-static MultiRowCache _row_cache;
+static MultiRowCache g_RowCache;
 
 //
 int
@@ -253,15 +253,15 @@ flush_measurement(tntdb::Connection &conn)
     log_debug("Performing periodic flush");
     try {
         tntdb::Statement st;
-        string query = _row_cache.get_insert_query();
+        string query = g_RowCache.get_insert_query();
         if (query.length() == 0) {
-            _row_cache.reset_clock();
+            g_RowCache.reset_clock();
             return;
         }
         st = conn.prepare(query.c_str());
         uint32_t affected_rows = st.execute();
         log_debug("[t_bios_measurement]: flush measurements from cache, inserted %" PRIu32 " rows ", affected_rows);
-        _row_cache.clear();
+        g_RowCache.clear();
     }
     catch (const std::exception &e) {
         log_error ("Abnormal flush termination");
@@ -288,7 +288,7 @@ flush_measurement(std::string &url)
 void
 flush_measurement_when_needed(tntdb::Connection &conn)
 {
-    if (_row_cache.is_ready_for_insert()){
+    if (g_RowCache.is_ready_for_insert()){
         flush_measurement(conn);
     }
 }
@@ -296,7 +296,7 @@ flush_measurement_when_needed(tntdb::Connection &conn)
 void
 flush_measurement_when_needed(std::string &url)
 {
-    if (_row_cache.is_ready_for_insert()){
+    if (g_RowCache.is_ready_for_insert()){
         flush_measurement(url);
     }
 }
@@ -327,7 +327,7 @@ insert_into_measurement(
             log_error ("topic '%s' was not inserted -> cannot insert metric", topic);
             return 1;
         }
-        _row_cache.push_back(time,value,scale,topic_id);
+        g_RowCache.push_back(time,value,scale,topic_id);
         flush_measurement_when_needed(conn);
         return 0;
     }
