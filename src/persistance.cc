@@ -28,10 +28,11 @@
 
 #include "fty_metric_store_classes.h"
 
-MultiRowCache _row_cache;
+static MultiRowCache g_RowCache;
 
+//
 int
-    select_topic (
+select_topic (
         const std::string &connurl,
         const std::string &topic, // the whole topic XXX@YYY
         std::function<void(
@@ -68,10 +69,9 @@ int
     }
 }
 
-
-
+//
 int
-    select_measurements (
+select_measurements (
         const std::string &connurl,
         const std::string &topic, // the whole topic XXX@YYY
         int64_t start_timestamp,
@@ -117,7 +117,7 @@ int
 }
 
 m_dvc_id_t
-    insert_as_not_classified_device(
+insert_as_not_classified_device(
         tntdb::Connection &conn,
         const char        *device_name)
 {
@@ -125,7 +125,7 @@ m_dvc_id_t
         log_error("[t_bios_discovered_device] can't insert a device with NULL or non device name");
         return 0;
     }
-    m_dvc_id_t id_discovered_device=0;
+    m_dvc_id_t id_discovered_device = 0;
     tntdb::Statement st;
     st = conn.prepareCached(
         " INSERT INTO"
@@ -157,16 +157,16 @@ m_dvc_id_t
         );
         n = st.set("name", device_name).execute();
         log_debug("[t_bios_monitor_asset_relation]: inserted %" PRIu32 " rows about %s", n, device_name);
-    }else{
+    }
+    else {
         log_error("[t_discovered_device]:  device %s not inserted", device_name );
     }
     return id_discovered_device;
 }
 
-
-//return id_discovered_device or 0 in case of issue
+// return id_discovered_device or 0 in case of issue
 m_dvc_id_t
-    prepare_discovered_device(
+prepare_discovered_device(
         tntdb::Connection &conn,
         const char        *device_name)
 {
@@ -186,18 +186,22 @@ m_dvc_id_t
         tntdb::Row row=st.selectRow();
         row["id_discovered_device"].get(id_discovered_device);
         return id_discovered_device;
-    }catch(const tntdb::NotFound &e){
+    }
+    catch (const tntdb::NotFound &e){
         log_debug("[t_bios_discovered_device] device %s not found => try to create it as not classified",device_name);
         //add the device as 'not_classified' type
         // probably device doesn't exist in t_bios_discovered_device. Let's fill it.
         return insert_as_not_classified_device(conn,device_name);
     }
+    catch (...) {
+        log_error("Unknown exception caught!");
+        return 0;
+    }
 }
 
-
-//return topic_id or 0 in case of issue
+// return topic_id or 0 in case of issue
 m_msrmnt_tpc_id_t
-    prepare_topic(
+prepare_topic(
         tntdb::Connection &conn,
         const char        *topic,
         const char        *units,
@@ -211,6 +215,7 @@ m_msrmnt_tpc_id_t
     if ( id_discovered_device == 0 ) {
         return 0;
     }
+
     try {
         tntdb::Statement st =  conn.prepareCached(
             " INSERT INTO "
@@ -234,67 +239,71 @@ m_msrmnt_tpc_id_t
             log_error("[t_bios_measurement_topic]:  topic %s not inserted", topic);
         }
         return topic_id;
-    } catch(const std::exception &e) {
+    }
+    catch (const std::exception &e) {
         log_error ("Topic '%s' was not inserted with error: %s", topic, e.what());
         return 0;
     }
 }
 
+//
 void
-    flush_measurement(tntdb::Connection &conn)
+flush_measurement(tntdb::Connection &conn)
 {
     log_debug("Performing periodic flush");
     try {
         tntdb::Statement st;
-        string query = _row_cache.get_insert_query();
-        if(query.length()==0){
-            _row_cache.reset_clock();
+        string query = g_RowCache.get_insert_query();
+        if (query.length() == 0) {
+            g_RowCache.reset_clock();
             return;
         }
         st = conn.prepare(query.c_str());
         uint32_t affected_rows = st.execute();
-        log_debug("[t_bios_measurement]: flush  measurements from cache, inserted %" PRIu32 " rows ",
-                affected_rows);
-        _row_cache.clear();
-    } catch(const std::exception &e) {
+        log_debug("[t_bios_measurement]: flush measurements from cache, inserted %" PRIu32 " rows ", affected_rows);
+        g_RowCache.clear();
+    }
+    catch (const std::exception &e) {
         log_error ("Abnormal flush termination");
     }
 }
 
+//
 void
-    flush_measurement(std::string &url)
+flush_measurement(std::string &url)
 {
     tntdb::Connection conn;
     try {
-            conn = tntdb::connectCached(url);
-            conn.ping();
-        } catch (const std::exception &e) {
-            log_error("Can't connect to the database");
-            return;
-        }
+        conn = tntdb::connectCached(url);
+        conn.ping();
+    }
+    catch (const std::exception &e) {
+        log_error("Can't connect to the database");
+        return;
+    }
     flush_measurement(conn);
 }
 
 // Do a flush only if cache is full or enough time elapsed since the last flush
 void
-    flush_measurement_when_needed(tntdb::Connection &conn)
+flush_measurement_when_needed(tntdb::Connection &conn)
 {
-    if (_row_cache.is_ready_for_insert()){
+    if (g_RowCache.is_ready_for_insert()){
         flush_measurement(conn);
     }
 }
 
 void
-    flush_measurement_when_needed(std::string &url)
+flush_measurement_when_needed(std::string &url)
 {
-    if (_row_cache.is_ready_for_insert()){
+    if (g_RowCache.is_ready_for_insert()){
         flush_measurement(url);
     }
 }
 
-
+//
 int
-    insert_into_measurement(
+insert_into_measurement(
         tntdb::Connection &conn,
         const char        *topic,
         m_msrmnt_value_t   value,
@@ -318,22 +327,22 @@ int
             log_error ("topic '%s' was not inserted -> cannot insert metric", topic);
             return 1;
         }
-        _row_cache.push_back(time,value,scale,topic_id);
+        g_RowCache.push_back(time,value,scale,topic_id);
         flush_measurement_when_needed(conn);
         return 0;
-    } catch(const std::exception &e) {
+    }
+    catch (const std::exception &e) {
         log_error ("Metric with topic '%s' was not inserted with error: %s", topic, e.what());
         return 1;
     }
 }
 
 int
-    delete_measurements(
+delete_measurements(
         tntdb::Connection &conn,
         const char        *asset_name)
 {
     assert ( asset_name );
-
 
     try {
         tntdb::Statement st = conn.prepareCached (
@@ -347,7 +356,8 @@ int
         auto r = st.set("name", "%@" + std::string(asset_name)).execute();
         log_info ("deleted: %d", r);
         return 0;
-    } catch(const std::exception &e) {
+    }
+    catch (const std::exception &e) {
         log_error ("Cannot delete measurements and topics: '%s'", e.what());
         return 1;
     }

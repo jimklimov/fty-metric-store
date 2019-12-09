@@ -27,11 +27,10 @@
 */
 
 #include "fty_metric_store_classes.h"
-int
-actor_commands (
-        mlm_client_t *client,
-        zmsg_t **message_p) {
 
+int
+actor_commands (mlm_client_t *client, zmsg_t **message_p)
+{
     assert (message_p && *message_p);
     zmsg_t *message = *message_p;
 
@@ -44,109 +43,98 @@ actor_commands (
         return 0;
     }
 
-    int ret = 0;
     log_debug ("actor command = '%s'", cmd);
+
     if (streq (cmd, "$TERM")) {
         log_info ("Got $TERM");
-        ret = 1;
+        zstr_free (&cmd);
+        zmsg_destroy (message_p);
+        return 1; // special $TERM rv
     }
-    else
+
     if (streq (cmd, "CONNECT")) {
         char *endpoint = zmsg_popstr (message);
+        char *name = zmsg_popstr (message);
+
         if (!endpoint) {
             log_error (
-                    "Expected multipart string format: CONNECT/endpoint/name. "
-                    "Received CONNECT/nullptr");
-            zstr_free (&cmd);
-            zmsg_destroy (message_p);
-            return 0;
+                "Expected multipart string format: CONNECT/endpoint/name. "
+                "Received CONNECT/nullptr");
         }
-        char *name = zmsg_popstr (message);
-        if (!name) {
+        else if (!name) {
             log_error (
-                    "Expected multipart string format: CONNECT/endpoint/name. "
-                    "Received CONNECT/endpoint/nullptr");
-            zstr_free (&endpoint);
-            zstr_free (&cmd);
-            zmsg_destroy (message_p);
-            return 0;
+                "Expected multipart string format: CONNECT/endpoint/name. "
+                "Received CONNECT/endpoint/nullptr");
         }
-        int rv = mlm_client_connect (client, endpoint, 1000, name);
-        if (rv == -1) {
-            log_error (
-                    "mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed",
-                    endpoint, 1000, name);
+        else {
+            int rv = mlm_client_connect (client, endpoint, 1000, name);
+            if (rv == -1) {
+                log_error (
+                        "mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed",
+                        endpoint, 1000, name);
+            }
         }
 
-        zstr_free (&endpoint);
         zstr_free (&name);
+        zstr_free (&endpoint);
     }
-    else
-    if (streq (cmd, "PRODUCER")) {
+    else if (streq (cmd, "PRODUCER")) {
         char *stream = zmsg_popstr (message);
+
         if (!stream) {
             log_error (
                     "Expected multipart string format: PRODUCER/stream. "
                     "Received PRODUCER/nullptr");
-            zstr_free (&stream);
-            zstr_free (&cmd);
-            zmsg_destroy (message_p);
-            return 0;
         }
-        int rv = mlm_client_set_producer (client, stream);
-        if (rv == -1) {
-            log_error ("mlm_client_set_producer (stream = '%s') failed", stream);
+        else {
+            int rv = mlm_client_set_producer (client, stream);
+            if (rv == -1) {
+                log_error ("mlm_client_set_producer (stream = '%s') failed", stream);
+            }
         }
+
         zstr_free (&stream);
     }
-    else
-    if (streq (cmd, "CONSUMER")) {
+    else if (streq (cmd, "CONSUMER")) {
         char *stream = zmsg_popstr (message);
+        char *pattern = zmsg_popstr (message);
+
         if (!stream) {
             log_error (
                     "Expected multipart string format: CONSUMER/stream/pattern. "
                     "Received CONSUMER/nullptr");
-            zstr_free (&cmd);
-            zmsg_destroy (message_p);
-            return 0;
         }
-        char *pattern = zmsg_popstr (message);
-        if (!pattern) {
+        else if (!pattern) {
             log_error (
                     "Expected multipart string format: CONSUMER/stream/pattern. "
                     "Received CONSUMER/stream/nullptr");
-            zstr_free (&stream);
-            zstr_free (&cmd);
-            zmsg_destroy (message_p);
-            return 0;
         }
-        int rv = mlm_client_set_consumer (client, stream, pattern);
-        if (rv == -1) {
-            log_error (
-                    "mlm_client_set_consumer (stream = '%s', pattern = '%s') failed",
-                    stream, pattern);
+        else {
+            int rv = mlm_client_set_consumer (client, stream, pattern);
+            if (rv == -1) {
+                log_error (
+                        "mlm_client_set_consumer (stream = '%s', pattern = '%s') failed",
+                        stream, pattern);
+            }
         }
+
         zstr_free (&pattern);
         zstr_free (&stream);
     }
-    else
-    if (streq (cmd, "CONFIGURE")) {
+    else if (streq (cmd, "CONFIGURE")) {
         char *config_file = zmsg_popstr (message);
         if (!config_file) {
             log_error (
                     "Expected multipart string format: CONFIGURE/config_file. "
                     "Received CONFIGURE/nullptr");
-            zstr_free (&config_file);
-            zstr_free (&cmd);
-            zmsg_destroy (message_p);
-            return 0;
         }
-        // TODO: implement config file
+        else {
+            log_warning("TODO: implement config file");
+        }
+
         zstr_free (&config_file);
     }
-    else
-    if (streq (cmd, FTY_METRIC_STORE_CONF_PREFIX))
-    {
+    else if (streq (cmd, FTY_METRIC_STORE_CONF_PREFIX)) {
         log_debug ("%s is not yet implemented!", FTY_METRIC_STORE_CONF_PREFIX);
     }
     else {
@@ -155,9 +143,9 @@ actor_commands (
 
     zstr_free (&cmd);
     zmsg_destroy (message_p);
-    return ret;
-}
 
+    return 0;
+}
 
 //  --------------------------------------------------------------------------
 //  Self test of this class

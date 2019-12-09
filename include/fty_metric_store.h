@@ -27,6 +27,5 @@
 
 //  Add your own public definitions here, if you need them
 #define FTY_METRIC_STORE_CONF_PREFIX "FTY_METRIC_STORE_AGE"
-#define LOG_CONFIG      "/etc/fty/ftylog.cfg"
 
 #endif
