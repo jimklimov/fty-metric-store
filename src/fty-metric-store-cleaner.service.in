@@ -1,7 +1,7 @@
 [Unit]
 Description=42Ity metric persistance cleaner
-Requires=fty-db-init.service
-After=fty-db-init.service
+Requires=fty-db.target
+After=fty-db.target
 PartOf=bios.target
 
 [Service]
