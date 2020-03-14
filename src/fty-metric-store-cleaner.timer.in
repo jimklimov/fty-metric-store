@@ -3,8 +3,8 @@ Description=Timer to call fty-metric-store-cleaner.service
 # For the timer unit, we just need it to tick. Until the EULA wizard is passed,
 # it should however suffice that the timer runs and occasionally tries to start
 # the service unsuccessfully once a day or so...
-Wants=fty-db.target
-After=fty-db.target
+Wants=fty-db-init.service
+After=fty-db-init.service
 PartOf=bios.target
 
 [Timer]
