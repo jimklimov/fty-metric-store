@@ -9,7 +9,7 @@ Requires = local-fs.target ipc-meta-setup.service
 After = local-fs.target ipc-meta-setup.service
 Conflicts=shutdown.target
 
-PartOf=bios.target
+PartOf=multi-user.target
 
 [Timer]
 ### Run every midnight
@@ -18,4 +18,4 @@ OnCalendar=*-*-* 23:37:00
 Persistent=false
 
 [Install]
-WantedBy=bios.target
+WantedBy=multi-user.target
