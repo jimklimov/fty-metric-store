@@ -21,5 +21,6 @@ Environment="prefix=@prefix@"
 EnvironmentFile=@sysconfdir@/default/bios-db-rw
 ExecStart=@prefix@/bin/fty-metric-store-cleaner @sysconfdir@/@PACKAGE@/fty-metric-store.cfg
 
-[Install]
-WantedBy=bios.target
+# No [Install] section, trigger only by timer
+#[Install]
+#WantedBy=bios.target
