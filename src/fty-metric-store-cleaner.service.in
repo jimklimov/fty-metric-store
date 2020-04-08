@@ -1,7 +1,7 @@
 [Unit]
 Description=42Ity metric persistance cleaner
-Requires=fty-db-init.service
-After=fty-db-init.service
+Requires=fty-db.target
+After=fty-db.target
 PartOf=bios.target
 
 [Service]
@@ -21,5 +21,6 @@ Environment="prefix=@prefix@"
 EnvironmentFile=@sysconfdir@/default/bios-db-rw
 ExecStart=@prefix@/bin/fty-metric-store-cleaner @sysconfdir@/@PACKAGE@/fty-metric-store.cfg
 
-[Install]
-WantedBy=bios.target
+# No [Install] section, trigger only by timer
+#[Install]
+#WantedBy=bios.target
