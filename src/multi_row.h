@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2016 Eaton
+Copyright (C) 2016 - 2020 Eaton
     Note: This file was manually amended, see below
 
 This program is free software; you can redistribute it and/or modify
